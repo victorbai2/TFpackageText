@@ -31,7 +31,7 @@
 ```
 $ pip install -r requirements
 ```
-or 
+or use it as a library
 ```
 python setup.py sdist
 pip install TFpackageText-0.0.1.tar.gz

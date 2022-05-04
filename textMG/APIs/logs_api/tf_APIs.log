@@ -1,3 +1,6 @@
-2022-05-04 14:34:37: DEBUG: prediction api is called, the prediction is started 
-2022-05-04 14:34:37: DEBUG: inquiries is: inquiry=['我爱记歌词', '不喜欢旅行'] 
-2022-05-04 14:34:50: DEBUG: {'records': {'0': {'category': 'sports', 'label': '3', 'pred_logits': '[0.17917507886886597, 0.18527185916900635, 0.21642211079597473, 0.2197655588388443, 0.19936545193195343]'}, '1': {'category': 'sports', 'label': '3', 'pred_logits': '[0.16679583489894867, 0.15926013886928558, 0.2363319993019104, 0.23721303045749664, 0.20039893686771393]'}}, 'time_used': '5.31662917137146'} 
+2022-05-04 15:07:23: DEBUG: index api is called 
+2022-05-04 15:08:50: DEBUG: evaluate api is called, the evaluation is started 
+1: DEBUG: prediction api is called, the prediction is started 
+2022-05-04 15:08:11: DEBUG: inquiries is: inquiry=['我爱记歌词', '不喜欢旅行'] 
+2022-05-04 15:08:20: DEBUG: {'records': {'0': {'category': 'sports', 'label': '3', 'pred_logits': '[0.17917507886886597, 0.18527185916900635, 0.21642211079597473, 0.2197655588388443, 0.19936545193195343]'}, '1': {'category': 'sports', 'label': '3', 'pred_logits': '[0.16679583489894867, 0.15926013886928558, 0.2363319993019104, 0.23721303045749664, 0.20039893686771393]'}}, 'time_used': '2.7564635276794434'} 
+2022-05-04 15:09:30: INFO: health check api is called 
