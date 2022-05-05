@@ -49,9 +49,9 @@ $ ./starup.sh -m [train|evel|pred]
 ```
 or via APIs:
 ```
-http://localhost:5000/api/train
-http://localhost:5000/api/eval
-http://localhost:5000/api/pred
+http://localhost:5000/api/v1/train
+http://localhost:5000/api/v1/eval
+http://localhost:5000/api/v1/pred
 ```
 
 ### API calls
@@ -98,7 +98,7 @@ build_SavedModel(conv_net, args.export_path_serving, args.savedmodel_version, X_
 predict:
 ```
 curl -X 'POST' \
-  'http://localhost:5000/api/pred' \
+  'http://localhost:5000/api/v1/pred' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -133,7 +133,7 @@ Response Body:
 load data batch(batch_size=2):
 ```
 curl -X 'GET' \
-  'http://localhost:5000/api/batch_load/2' \
+  'http://localhost:5000/api/v1/batch_load/2' \
   -H 'accept: application/json'
   
 Response Body:

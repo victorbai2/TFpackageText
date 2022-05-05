@@ -15,7 +15,7 @@ generator = Generator()
 
 # load batch data from disk, not from memory, and tokenize and generate it.
 router = APIRouter(
-    prefix="/api",
+    prefix="/api/v1",
     tags=["batch loader"],
 )
 

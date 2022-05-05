@@ -16,8 +16,8 @@ from textMG.main_multiGPU import do_train, do_eval, Predict
 
 template = Jinja2Templates("/home/projects/TFpackageText/textMG/APIs/htmls")
 router = APIRouter(
-    prefix="/api",
-    tags=["api"],
+    prefix="/api/v1",
+    tags=["api/v1"],
 )
 
 
