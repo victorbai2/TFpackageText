@@ -29,7 +29,7 @@
 
 ### Installation
 ```
-$ pip install -r requirements
+$ pip install -r requirements.txt
 ```
 or use it as a library
 ```
@@ -59,7 +59,7 @@ Start API
 ```
 $ python api_run.py
 ```
-
+![SwaggerUI](images/swaggerUI.png)
 ### Swagger docs
 ```
 http://localhost:5000/docs
