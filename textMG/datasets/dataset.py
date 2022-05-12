@@ -5,9 +5,27 @@ import os
 from time import time
 from collections import Counter
 from textMG.configs.config import args, label_dict
+from textMG.models.tokenization import FullTokenizer
 import csv
-
 from textMG.utils.loggers import logger
+
+
+class FullTokenizerV2(FullTokenizer):
+    def convert_tokens_to_ids(self, tokens):
+        return self.convert_by_vocab(self.vocab, tokens)
+
+    def convert_by_vocab(self, vocab, items):
+        """Converts a sequence of [tokens|ids] using the vocab."""
+        output = []
+        for item in items:
+            if item not in vocab:
+                if item is ' ':
+                    item = '[unused1]'  # space类用未经训练的[unused1]表示
+                else:
+                    item = '[UNK]'
+            output.append(vocab[item])  # 剩余的字符是[UNK]
+        return output
+
 
 class Dataset:
     def __init__(self):
@@ -128,9 +146,12 @@ class Dataset:
                 stopwords.append(w)
         return stopwords
 
-    def tokenizer(self, file, vocab):
-        tokenized_data = []
-        tokenized_data = [vocab[w] if w in vocab else 0 for w in file]
+    def tokenizer(self, lines, vocab):
+        tokenized_data = [vocab[w] if w in vocab else 0 for w in lines]
+        return tokenized_data
+
+    def bert_tokenizer(self, line, F_tokenizer):
+        tokenized_data = F_tokenizer.convert_tokens_to_ids(line)
         return tokenized_data
 
     def pad_sequences(self, x, max_len):
@@ -143,7 +164,7 @@ class Dataset:
     def one_hot(self, x):
         scalar = [0] * len(label_dict)
         scalar[x] = 1
-        return  scalar
+        return scalar
 
     def process_data(self, data_dir, vocab_file, path_stopwords, n_examples=None):
         """
@@ -211,6 +232,53 @@ class Dataset:
             x_ = self.pad_sequences(x_, args.max_len)
         return x_
 
+    def process_data_pretrained(self, data_dir, vocab_file, path_stopwords, max_len, is_token_b=False, n_examples=None):
+        """
+        load and tokenize data for pretrained embedding
+        """
+        t1=time()
+        files = [f for f in os.listdir(data_dir) if f.endswith(".txt")]
+        F_tokenizer = FullTokenizerV2(vocab_file=vocab_file, do_lower_case=args.do_lower_case)
+        stopwords = self.load_stopwords(path_stopwords)
+        input_ids=[]
+        input_masks=[]
+        input_type_ids=[]
+        y_output = []
+        num = 0
+        for filename in files:
+            with open(os.path.join(data_dir, filename), 'r') as f:
+                if not is_token_b:
+                    for line in f:
+                        try:
+                            x_, y_ = line.strip().split("|")
+                            # x_ = jieba.lcut(x_.strip())
+                            # x_ = list(filter(lambda x: len(x) > 1, x_))  # filer out the words with len < 2
+                            # x_ = list(filter(lambda x: x not in stopwords, x_))  # filter the stopwords
+                            x = ["[CLS]"]
+                            for i in x_:
+                                x.append(i)
+                            x.append("[SEP]")
+                            x = self.bert_tokenizer(x, F_tokenizer)
+                            mask = [1] * len(x)
+                            y = label_dict[y_]
+                            if len(x) > 0 and y:
+                                x = self.pad_sequences(x, max_len)
+                                mask = self.pad_sequences(mask, max_len)
+                                input_type = [0] * max_len
+                                input_ids.append(x)
+                                input_masks.append(mask)
+                                input_type_ids.append(input_type)
+                                y = self.one_hot(y)
+                                y_output.append(y)
+                                num += 1
+                                if n_examples and num == n_examples:
+                                    return input_ids, input_masks, input_type_ids, y_output
+                        except Exception as e:
+                            logger.critical('this is exception', exc_info=1)
+                            logger.critical("the excepted line is:{}".format(line))
+                            continue
+        logger.info("time used to process the all data: {}s".format(time()-t1))
+        return input_ids, input_masks, input_type_ids, y_output
 
 if __name__ == '__main__':
     dataset = Dataset()

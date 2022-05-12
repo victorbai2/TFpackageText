@@ -7,7 +7,7 @@
 @time: 2022/5/1 20:36
 """
 import uvicorn
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI
 from APIs.routers.tensorflow_service import router as tf_router
 from APIs.routers.health_check import router as h_router
 from APIs.routers.data_generator import router as data_router
@@ -22,5 +22,5 @@ app.include_router(data_router)
 
 if __name__ == '__main__':
     logger.debug("the app will be started on port {}".format(args.port))
-    uvicorn.run("api_run:app", host=args.host, port=args.port, workers=2, log_level="debug")
-
+    uvicorn.run("api_run:app", host=args.host, port=args.port, workers=2,
+                log_level="debug")

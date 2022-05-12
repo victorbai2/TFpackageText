@@ -20,13 +20,12 @@ router = APIRouter(
 )
 
 @router.get("/batch_load/{batch_size}")
-async def batch_loader(batch_size: int):
+def batch_loader(batch_size: int):
     """load data in defined patches"""
     data = {}
     iter = generator.get_next_patch(batch=batch_size)
-    for i in range(batch_size):
-        el = next(iter)
-        data[i] = el
+    el = next(iter)
+    data["batch"] = el
     data["input_shape"] = [len(el['x_input']), len(el['x_input'][0])]
     data["output_shape"] = len(el['y_output'])
     return Response(data=data, response_code=200, message="success", error=False)

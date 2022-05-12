@@ -4,13 +4,9 @@ import warnings
 from utils.loggers import logger
 
 warnings.filterwarnings('ignore')
-# from tensorflow.python.util import deprecation
-# deprecation._PRINT_DEPRECATION_WARNINGS = False
 import tensorflow as tf
-
+# tf.compat.v1.enable_eager_execution()
 # tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
-# print("tensorflow version:", tf.__version__)
-# tf.compat.v1.logging.info("tensorflow version: {}".format(tf.__version__))
 logger.info("tensorflow version: {}".format(tf.__version__))
 
 import numpy as np
@@ -23,20 +19,34 @@ from configs.config import parser, args, remaining_argv, label_dict
 from models.model_cnn_category import Model_cnn
 from datasets.dataset import Dataset
 from tf_serving.savedmodel_serving import build_SavedModel
-from configs.config_multiGPU import multi_GPU_training, device_set
+from configs.config_multiGPU import multi_GPU_training, device_set, load_init_from_checkpoint
 from utils import metrics, pred_to_result, json_output
+from models.bert_module import Bert_module
+from models.bertBaseModule import BertConfig
 
-
-def loader_before_training():
-    # load evaluation data
-    dataset = Dataset()
-    x_eval, y_eval = dataset.process_data(args.path_data_dir, args.vocab_file, args.path_stopwords, n_examples=500)
-    # load model
-    conv_net = Model_cnn()
+def loader_before_training(is_pretrained):
     # train on CPU or GPU
     device_set(args.device_type)
-    return dataset, conv_net, x_eval, y_eval
+    # load evaluation data
+    dataset = Dataset()
+    if not is_pretrained:
+        x_eval, y_eval = dataset.process_data(args.path_data_dir, args.vocab_file, args.path_stopwords, n_examples=500)
+        # load model
+        model = Model_cnn()
+        return dataset, model, x_eval, y_eval
+    else:
+        input_ids_eval, input_masks_eval, input_type_ids_eval, y_output_eval = \
+            dataset.process_data_pretrained(args.path_data_dir,
+                                           args.pretrained_vocab_file,
+                                           args.path_stopwords,
+                                           max_len=args.max_len,
+                                           is_token_b=False,
+                                           n_examples=50)
 
+        bert_config = BertConfig.from_json_file(args.bert_config_file)
+        # load model
+        model = Bert_module()
+        return dataset, model, bert_config, input_ids_eval, input_masks_eval, input_type_ids_eval, y_output_eval
 
 # do_train
 def do_train():
@@ -44,10 +54,19 @@ def do_train():
     # Place all ops on CPU by default
     with tf.device('/cpu:0'):
         # call loader before start training or evaluating
-        _, conv_net, x_eval, y_eval = loader_before_training()
-
-        # do multiGPU training
-        train_op, loss_patch_ave, train_initializer, X_batch_numGPU, Y_batch_numGPU = multi_GPU_training(conv_net)
+        if not args.is_pretrained:
+            _, model, x_eval, y_eval = loader_before_training(is_pretrained=args.is_pretrained)
+            # do multiGPU training
+            train_op, loss_patch_ave, train_initializer, X_batch_numGPU, Y_batch_numGPU = multi_GPU_training(model)
+        else:
+            _, model, bert_config, input_ids_eval, input_masks_eval, input_type_ids_eval, y_output_eval = \
+                loader_before_training(is_pretrained=args.is_pretrained)
+            # do multiGPU training
+            train_op, loss_patch_ave, train_initializer, X_ids_batchG, X_masks_batchG, X_type_ids_batchG, \
+            Y_batchG = multi_GPU_training(model)
+            #get initial variable from pretrained model
+            if args.init_checkpoint:
+                load_init_from_checkpoint(args.init_checkpoint)
 
         # Initializing the variables
         init = tf.global_variables_initializer()
@@ -81,8 +100,16 @@ def do_train():
                 for i in range(total_batch):
                     # Get a batch from tf.data.Dataset.from_generator to verify the batch.
                     if epoch == 1 and i == 0:  # only print for the 1th epoch and 1st patch
-                        x_batch, y_batch = sess.run([X_batch_numGPU, Y_batch_numGPU])
-                        logger.info('x_batch.shape: {}, y_batch.shape: {}'.format(x_batch.shape, y_batch.shape))
+                        if not args.is_pretrained:
+                            x_batch, y_batch = sess.run([X_batch_numGPU, Y_batch_numGPU])
+                            logger.info('x_batch.shape: {}, y_batch.shape: {}'.format(x_batch.shape, y_batch.shape))
+                        else:
+                            x_ids_batchG, x_masks_batchG, x_type_ids_batchG, y_batchG \
+                                = sess.run([X_ids_batchG, X_masks_batchG, X_type_ids_batchG, Y_batchG])
+
+                            logger.info('x_ids_batchG.shape: {}, x_masks_batchG.shape: {}, x_type_ids_batchG.shape:'
+                                        ' {}, y_batchG.shape: {}'.format(x_ids_batchG.shape, x_masks_batchG.shape,
+                                                                         x_type_ids_batchG.shape, y_batchG.shape))
 
                     # Run optimization op (backprop)
                     _, train_cost = sess.run([train_op, loss_patch_ave])
@@ -90,20 +117,50 @@ def do_train():
                     avg_train_cost += train_cost / total_batch
                     if i >= 3:
                         break
+
                 # get the accuracy for train and test dataset
-                x_train = x_eval[:250]
-                y_train = y_eval[:250]
-                pred_tr = conv_net(x_train, args.num_classes, args.dropout,
-                                   reuse=True, is_training=False)['output']
-                train_acc_ = metrics.accuracy_cal(pred_tr, y_train)
-                train_acc = sess.run(train_acc_)
-                # test accuracy
-                x_test = x_eval[250:]
-                y_test = y_eval[250:]
-                pred_te = conv_net(x_test, args.num_classes, args.dropout,
-                                   reuse=True, is_training=False)['output']
-                test_acc_ = metrics.accuracy_cal(pred_te, y_test)
-                test_acc = sess.run(test_acc_)
+                if not args.is_pretrained:
+                    #train accuracy
+                    x_train = x_eval[:250]
+                    y_train = y_eval[:250]
+                    pred_tr = model(x_train, args.num_classes, args.dropout,
+                                       reuse=True, is_training=False)['output']
+                    train_acc_ = metrics.accuracy_cal(pred_tr, y_train)
+                    train_acc = sess.run(train_acc_)
+                    # test accuracy
+                    x_test = x_eval[250:]
+                    y_test = y_eval[250:]
+                    pred_te = model(x_test, args.num_classes, args.dropout,
+                                       reuse=True, is_training=False)['output']
+                    test_acc_ = metrics.accuracy_cal(pred_te, y_test)
+                    test_acc = sess.run(test_acc_)
+                else:
+                    # train accuracy
+                    train_input_params = {
+                        'bert_config': bert_config,
+                        'input_ids': input_ids_eval[:10],
+                        'input_mask': input_masks_eval[:10],
+                        'input_type_ids': input_type_ids_eval[:10],
+                        'is_training_pretrained': True,
+                        'use_one_hot_embeddings': False,
+                    }
+                    pred_tr = model(args.num_classes, args.max_len, args.hidden_size, reuse=True,
+                                    is_training=False, ** train_input_params)['output']
+                    train_acc_ = metrics.accuracy_cal(pred_tr, y_output_eval[:10])
+                    train_acc = sess.run(train_acc_)
+                    # test accuracy
+                    test_input_params = {
+                        'bert_config': bert_config,
+                        'input_ids': input_ids_eval[10:],
+                        'input_mask': input_masks_eval[10:],
+                        'input_type_ids': input_type_ids_eval[10:],
+                        'is_training_pretrained': True,
+                        'use_one_hot_embeddings': False,
+                    }
+                    pred_te = model(args.num_classes, args.max_len, args.hidden_size, reuse=True,
+                                    is_training=False, ** test_input_params)['output']
+                    test_acc_ = metrics.accuracy_cal(pred_te, y_output_eval[10:])
+                    test_acc = sess.run(test_acc_)
 
                 # save best net
                 if test_acc > max_test_acc:
@@ -118,12 +175,18 @@ def do_train():
                         # best_epoch = epoch - args.patience - 1
                         logger.info('best_epoch is : {}'.format(best_epoch))
                         # save model for both eval/pred
-                        saver.save(best_sess, args.model_dir + "cnn_category.ckpt-" + str(best_epoch))
-                        is_saved = 1
-                        logger.info("saved model to: {}".format(args.model_dir))
-                        # call build_SavedModel to build a SavedModel for tensor serving
-                        build_SavedModel(conv_net, args.export_path_serving, args.savedmodel_version, X_batch_numGPU,
-                                         best_sess)
+                        if args.is_pretrained:
+                            saver.save(best_sess, args.model_dir + "cnn_category.ckpt-" + str(best_epoch))
+                            is_saved = 1
+                            logger.info("saved model to: {}".format(args.model_dir))
+                            # call build_SavedModel to build a SavedModel for tensor serving
+                            build_SavedModel(model, args.export_path_serving, args.savedmodel_version, X_batch_numGPU,
+                                             best_sess)
+                        else:
+                            saver.save(best_sess, args.model_dir_save_pretrain + "pretrained_category.ckpt-" +
+                                       str(best_epoch))
+                            is_saved = 1
+                            logger.info("saved model to: {}".format(args.model_dir_save_pretrain))
                         break
 
                 # get time used for each epoch
@@ -131,15 +194,22 @@ def do_train():
                 # print
                 if epoch % args.display_step == 0:
                     # F1_score for train
-                    train_macro = f1_score(np.argmax(y_train, -1), np.argmax(pred_tr.eval(session=sess), -1),
-                                           average='macro')
-                    # F1_score for test
-                    test_macro = f1_score(np.argmax(y_test, -1), np.argmax(pred_te.eval(session=sess), -1),
-                                          average='macro')
+                    if not args.is_pretrained:
+                        train_macro = f1_score(np.argmax(y_train, -1), np.argmax(pred_tr.eval(session=sess), -1),
+                                               average='macro')
+                        # F1_score for test
+                        test_macro = f1_score(np.argmax(y_test, -1), np.argmax(pred_te.eval(session=sess), -1),
+                                              average='macro')
+                    else:
+                        train_macro = f1_score(np.argmax(y_output_eval[:10], -1), np.argmax(pred_tr.eval(session=sess), -1),
+                                               average='macro')
+                        # F1_score for test
+                        test_macro = f1_score(np.argmax(y_output_eval[10:], -1), np.argmax(pred_te.eval(session=sess), -1),
+                                              average='macro')
 
                     logger.info(
-                        "Epoch: {:02d}/{:02d}, avg_train_cost: {:.5f}, train_acc: {:.5f}, test_acc: {:.5f}, time_used: {:.2f}s"
-                            .format(epoch, args.training_epochs, avg_train_cost, train_acc, test_acc, time_used))
+                        "Epoch: {:02d}/{:02d}, avg_train_cost: {:.5f}, train_acc: {:.5f}, test_acc: {:.5f}, time_used: "
+                        "{:.2f}s".format(epoch, args.training_epochs, avg_train_cost, train_acc, test_acc, time_used))
                     logger.info("f1_score: train_macro:{:.4f}, test_macro:{:.4f}"
                                 .format(train_macro, test_macro))
                     train_result = {
@@ -149,14 +219,19 @@ def do_train():
                         "test_acc": str(test_acc),
                         "train_macro": str(train_macro),
                         "test_macro": str(test_macro),
-                        "saved model to path": args.model_dir
+                        "saved model to path": args.model_dir if not args.is_pretrained else args.model_dir_save_pretrain
                     }
             # save model for both eval/pred and model serving
             if is_saved == None:
-                saver.save(best_sess, args.model_dir + "cnn_category.ckpt-" + str(best_epoch))
-                logger.info("saved model to: {}".format(args.model_dir))
-                # call build_SavedModel to build a SavedModel for tensor serving
-                build_SavedModel(conv_net, args.export_path_serving, args.savedmodel_version, X_batch_numGPU, best_sess)
+                if not args.is_pretrained:
+                    saver.save(best_sess, args.model_dir + "cnn_category.ckpt-" + str(best_epoch))
+                    logger.info("saved model to: {}".format(args.model_dir))
+                    # call build_SavedModel to build a SavedModel for tensor serving
+                    build_SavedModel(model, args.export_path_serving, args.savedmodel_version, X_batch_numGPU, best_sess)
+                else:
+                    saver.save(best_sess, args.model_dir_save_pretrain + "pretrained_category.ckpt-" +
+                               str(best_epoch))
+                    logger.info("saved model to: {}".format(args.model_dir_save_pretrain))
 
     end = time()
     logger.info('Elapsed time is {:.2f} seconds.'.format(end - start))

@@ -7,7 +7,8 @@
 - [Getting Started](#Getting-Started)
   - [Installation](#Installation)
   - [Usage](#Usage)
-  - [Model Training/evaluating/prediction](#Model-Training/evaluating/prediction)
+  - [Model Training evaluating prediction](#Model-Training-evaluating-prediction)
+  - [Rewrite pretrained model interface](#Rewrite-pretrained-model-interface)
   - [API calls](#API-calls)
   - [Swagger docs](#Swagger-docs)
   - [Data Pipeline](#Data-Pipeline)
@@ -42,7 +43,7 @@ pip install TFpackageText-0.0.1.tar.gz
 from textMG import models, datasets, APIs
 ```
 
-### Model Training/evaluating/prediction
+### Model Training evaluating prediction
 It is initially trained on multi-GPU environment
 ```
 $ ./starup.sh -m [train|evel|pred]
@@ -53,6 +54,24 @@ http://localhost:5000/api/v1/train
 http://localhost:5000/api/v1/eval
 http://localhost:5000/api/v1/pred
 ```
+### Rewrite pretrained model interface
+original source code is trained via tf.estimater which is hard to debug and 
+manipulate transformer models. The new interface will be able to run
+purely with session.
+```
+class Bert_module:
+    def __init__(self, *args, **kwargs):
+        self.bert = BertModel
+        self.kwargs = kwargs
+
+    def __call__(self, num_labels, max_len, hidden_size, reuse=tf.AUTO_REUSE, is_training=True, dropout=0.3, *args, **kwargs):
+        with tf.variable_scope('bert_classification', reuse=reuse):
+            output_weights = tf.get_variable(
+                "output_weights", [num_labels, hidden_size],
+                initializer=tf.truncated_normal_initializer(stddev=0.02))
+```
+set 'is_pretrained' to be True in order to use pretrained model as embeddings
+```parser.add_argument('--is_pretrained', type=bool, default=True)```
 
 ### API calls
 Start API
@@ -103,7 +122,7 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -d '{
   "inquiry": [
-    "我热爱...", "喜欢游泳...."...
+    "在北京举办...", "三点不足导致球队...."...
   ]
 }'
 
@@ -139,20 +158,10 @@ curl -X 'GET' \
 Response Body:
 {
   "data": {
-    "0": {
+    "batch": {
       "x_input": [
         [701,101,..],
         [1842,2182,...]
-      ],
-      "y_output": [
-        [0,0,0,0,1],
-        [0,0,0,0,1],
-      ]
-    },
-    "1": {
-      "x_input": [
-        [3934,150,...],
-        [3181,5275,...]
       ],
       "y_output": [
         [0,0,0,0,1],
@@ -173,14 +182,6 @@ Response Body:
 $ab -p 'tensorAPI.json'  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 -t 120 'http://192.168.1.14:5000/api/pred'
 ```
 
-tensorAPI.json
-```
-{
-  "inquiry": [
-    "sentence1", "sentence2" ...
-  ]
-}
-```
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
