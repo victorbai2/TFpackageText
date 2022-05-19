@@ -88,10 +88,8 @@ data can be loaded directly
 ```python
 # load data from disk and generator.
 generator = Generator()
-# print 2 outputs from our generator just to see if it works:
 iter = generator.get_next_patch(batch=2)
-for i in range(2):
-    el = next(iter)
+el = next(iter)
 ```
 or via tf.data.Dataset.from_generator
 ```python
@@ -101,16 +99,46 @@ train_dataset = tf.data.Dataset.from_generator(generator.get_next_patch,
 train_dataset = train_dataset.repeat().batch(args.batch_size * args.num_gpusORcpus).prefetch(1)
 ```
 or via api
-```python
+```
 curl -X 'GET' \
   'http://localhost:5000/api/batch_load/2' \
   -H 'accept: application/json'
 ```
 ### Tensorflow serving
 after training, the model for tf servering is saved to different path for restful and grpc.
-```python
+```
 # call build_SavedModel to build a SavedModel for tensor serving
 build_SavedModel(conv_net, args.export_path_serving, args.savedmodel_version, X_batch_numGPU, best_sess)
+```
+
+```
+$ docker pull tensorflow-serving:1.15.0
+$ nohup docker run --name container_serving -p 8501:8501 -p 8500:8500 \
+    ........
+    --batching_parameters_file=/models/batch.config >  /home/projects/tf1_serving_log.out 2>&1 &
+```
+call api below for tf serving reference
+```
+curl -X 'POST' \
+  'http://192.168.1.14:5000/api/v1/infer' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "batch_infer": [
+    "string"
+  ]
+}'
+```
+
+### Project Automation
+edit Jenkinsfile to automate the process of training/evaluating/referring
+```
+node("jekins-agent1"){
+    stage("Git clone"){
+        sh 'cd /opt/jenkins/workspace/  && rm -rf TFpackegeText'
+        sh 'git clone git@github.com:victorbai2/TFpackageText.git && tar -czvf package.tar.gz'
+    }
+    .......
 ```
 
 ### Examples

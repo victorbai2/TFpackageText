@@ -24,7 +24,7 @@ from utils import metrics, pred_to_result, json_output
 from models.bert_module import Bert_module
 from models.bertBaseModule import BertConfig
 
-def loader_before_training(is_pretrained):
+def loader_before_training(is_pretrained=args.is_pretrained):
     # train on CPU or GPU
     device_set(args.device_type)
     # load evaluation data
@@ -92,7 +92,7 @@ def do_train():
             best_epoch = args.training_epochs
             best_sess = None
             is_saved = None
-            total_batch = int(args.total_examples / (args.batch_size * args.num_gpusORcpus))
+            total_batch = int(args.total_examples // (args.batch_size * args.num_gpusORcpus))
             # Keep training until reach max iterations
             for epoch in range(1, args.training_epochs + 1):
                 ts = time()
@@ -115,8 +115,8 @@ def do_train():
                     _, train_cost = sess.run([train_op, loss_patch_ave])
                     # Compute average loss
                     avg_train_cost += train_cost / total_batch
-                    if i >= 3:
-                        break
+                    if i >= 20:
+                        break  # remove this break when actually training
 
                 # get the accuracy for train and test dataset
                 if not args.is_pretrained:
@@ -175,7 +175,7 @@ def do_train():
                         # best_epoch = epoch - args.patience - 1
                         logger.info('best_epoch is : {}'.format(best_epoch))
                         # save model for both eval/pred
-                        if args.is_pretrained:
+                        if not args.is_pretrained:
                             saver.save(best_sess, args.model_dir + "cnn_category.ckpt-" + str(best_epoch))
                             is_saved = 1
                             logger.info("saved model to: {}".format(args.model_dir))
@@ -208,8 +208,8 @@ def do_train():
                                               average='macro')
 
                     logger.info(
-                        "Epoch: {:02d}/{:02d}, avg_train_cost: {:.5f}, train_acc: {:.5f}, test_acc: {:.5f}, time_used: "
-                        "{:.2f}s".format(epoch, args.training_epochs, avg_train_cost, train_acc, test_acc, time_used))
+                        "Epoch: {:02d}/{:02d}, steps: {}/{}, avg_train_cost: {:.5f}, train_acc: {:.5f}, test_acc: {:.5f}, time_used: "
+                        "{:.2f}s".format(epoch, args.training_epochs, i, total_batch, avg_train_cost, train_acc, test_acc, time_used))
                     logger.info("f1_score: train_macro:{:.4f}, test_macro:{:.4f}"
                                 .format(train_macro, test_macro))
                     train_result = {
@@ -245,14 +245,14 @@ def do_train():
 def do_eval():
     with tf.device('/cpu:0'):
         # call loader before start training or evaluating
-        _, conv_net, x_eval, y_eval = loader_before_training()
+        _, model, x_eval, y_eval = loader_before_training()
 
         with tf.Graph().as_default() as g:
             t1 = time()
             # test accuracy and F1_score
             x_test = x_eval
             y_test = y_eval
-            pred_te = conv_net(x_test, args.num_classes, args.dropout, reuse=False, is_training=False)['output']
+            pred_te = model(x_test, args.num_classes, args.dropout, reuse=False, is_training=False)['output']
             test_acc_ = metrics.accuracy_cal(pred_te, y_test)
             init = tf.global_variables_initializer()
             saver = tf.train.Saver()
@@ -288,12 +288,12 @@ class Predict:
     def do_pred(self, inquires):
         with tf.device('/cpu:0'):
             # load model
-            conv_net = Model_cnn()
+            model = Model_cnn()
             with tf.Graph().as_default() as g:
                 t1 = time()
                 logger.info("input_length is: {}".format(len(inquires[0])))
                 input = Dataset().inquiry_process_pred(inquires)
-                pred_logit = conv_net(input, args.num_classes, args.dropout, reuse=False, is_training=False)['output']
+                pred_logit = model(input, args.num_classes, args.dropout, reuse=False, is_training=False)['output']
                 prediction = tf.argmax(pred_logit, -1)
                 init = tf.global_variables_initializer()
                 saver = tf.train.Saver()

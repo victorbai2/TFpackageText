@@ -9,10 +9,12 @@
 from fastapi import APIRouter, Request, BackgroundTasks
 from textMG.APIs.api_loggers.api_logger import logger
 from fastapi.templating import Jinja2Templates
-from textMG.APIs.base_models.inquiries_model import InqueryModel
+from textMG.APIs.base_models.inquiries_model import InqueryModel, InferModel
 from textMG.APIs.base_models.responses import Response
+from textMG.configs.config import args
 
 from textMG.main_multiGPU import do_train, do_eval, Predict
+from textMG.tf_serving.grpc_infer import pred_func
 
 template = Jinja2Templates("/home/projects/TFpackageText/textMG/APIs/htmls")
 router = APIRouter(
@@ -48,8 +50,19 @@ def prediction(req: InqueryModel):
     logger.debug("inquiries is: {}".format(req))
     print("inquiries is: {}".format(req))
     pred = Predict()
-    pred.do_pred(req.inquiry)
+    pred.do_pred(req.query)
     # task.add_task(pred.do_pred, req.inquiry)
     logger.debug(pred.get_pred_result())
     print("******" * 15)
     return Response(data=pred.get_pred_result(), response_code=200, message="success", error=False)
+
+@router.post("/infer")
+def inference(req: InferModel):
+    """call infer function"""
+    logger.debug("inference api is called, the inference is started")
+    logger.debug("batch_infer is: {}".format(req))
+    print("batch_infer is: {}".format(req))
+    result = pred_func(InferModel.batch_infer, args.server, args.concurrency, args.num_tests)
+    logger.debug(result)
+    print("******" * 15)
+    return Response(data=result, response_code=200, message="success", error=False)

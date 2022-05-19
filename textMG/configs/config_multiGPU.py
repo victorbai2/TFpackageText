@@ -226,3 +226,4 @@ def load_init_from_checkpoint(init_checkpoint):
     (assignment_map, initialized_variable_names) = get_assignment_map_from_checkpoint(
         tvars, args.init_checkpoint)
     tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
+    logger.debug("loaded ckpt weights from {}".format(args.init_checkpoint))

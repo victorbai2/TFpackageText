@@ -1,1 +1,9 @@
-2022-05-12 17:05:02: DEBUG: train api is called, the model training is started 
+2022-05-19 13:44:46: DEBUG: prediction api is called, the prediction is started 
+2022-05-19 13:44:46: DEBUG: inquiries is: query=['string'] 
+2022-05-19 13:44:58: DEBUG: {'records': {'0': {'category': 'entertainment', 'label': '1', 'pred_logits': '[0.013028537854552269, 0.32980093359947205, 0.20372000336647034, 0.2901400029659271, 0.16331055760383606]'}}, 'time_used': '4.1325953006744385'} 
+2022-05-19 13:45:50: DEBUG: prediction api is called, the prediction is started 
+2022-05-19 13:45:50: DEBUG: inquiries is: query=['string'] 
+2022-05-19 13:45:59: DEBUG: {'records': {'0': {'category': 'entertainment', 'label': '1', 'pred_logits': '[0.013028537854552269, 0.32980093359947205, 0.20372000336647034, 0.2901400029659271, 0.16331055760383606]'}}, 'time_used': '2.433584690093994'} 
+2022-05-19 13:57:30: DEBUG: prediction api is called, the prediction is started 
+2022-05-19 13:57:30: DEBUG: inquiries is: query=['string'] 
+2022-05-19 13:57:39: DEBUG: {'records': {'0': {'category': 'entertainment', 'label': '1', 'pred_logits': '[0.013028537854552269, 0.32980093359947205, 0.20372000336647034, 0.2901400029659271, 0.16331055760383606]'}}, 'time_used': '2.4771201610565186'} 

@@ -77,7 +77,3 @@ with tf.Session() as sess:
         print(loss)
         print(accuracy)
     print("finished")
-
-
-print('x_ids_batchG.shape: {}, x_masks_batchG.shape: {}, x_type_ids_batchG.shape:'
-                                        ' {}, x_batchG.shape: {}'.format(1,2,3,4))
