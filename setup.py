@@ -8,18 +8,40 @@
 """
 
 import setuptools
-with open("/home/projects/tensorflow_practice/tf_pro/tf1/package_text/README.md", "r", encoding="utf-8") as fh:
+import os
+
+with open("/home/projects/TFpackageText/README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-install_requires = []
-with open("/home/projects/tensorflow_practice/tf_pro/tf1/package_text//requirements.txt", "r", encoding="utf-8") as f:
-    for n, line in enumerate(f):
-        if n==0 or n==1:
-            continue
-        line = line.strip()
-        line = line.split()
-        line = "==".join(line)
-        install_requires.append(line)
+pathToRequiredLib = "/home/projects/TFpackageText"
+
+def getRequiredLib(path):
+    with open(os.path.join(path, "requirements.txt"), "r", encoding="utf-8") as f:
+        if f.readline().split()[0] == "Package":
+            processRequiredLib(path)
+        return readRequiredLib(path)
+
+def processRequiredLib(path):
+    with open(os.path.join(path, "requirements.txt"), "r", encoding="utf-8") as f:
+        w = open(os.path.join(path, "requirements_1.txt"), "w", encoding="utf-8")
+        for n, line in enumerate(f):
+            if n==0 or n==1:
+                continue
+            line = line.strip()
+            line = line.split()
+            line = "==".join(line)
+            w.write(line + "\n")
+        w.close()
+    os.remove(os.path.join(path, "requirements.txt"))
+    os.rename(os.path.join(path, "requirements_1.txt"), os.path.join(path, "requirements.txt"))
+
+def readRequiredLib(path):
+    with open(path + "/requirements.txt", "r", encoding="utf-8") as f:
+        lines = []
+        for line in f:
+            lines.append(line.strip())
+    return lines
+
 
 setuptools.setup(
     name="TFpackageText",
@@ -37,7 +59,7 @@ setuptools.setup(
     ],
     # package_dir={"": ""},
     packages=setuptools.find_packages(),
-    install_requires=install_requires,
+    install_requires=getRequiredLib(pathToRequiredLib),
     tests_require=[
         'pytest>=3.3.1',
         'pytest-cov>=2.5.1',

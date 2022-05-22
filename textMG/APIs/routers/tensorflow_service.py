@@ -12,16 +12,26 @@ from fastapi.templating import Jinja2Templates
 from textMG.APIs.base_models.inquiries_model import InqueryModel, InferModel
 from textMG.APIs.base_models.responses import Response
 from textMG.configs.config import args
+from textMG.datasets.dataset import Dataset
 
 from textMG.main_multiGPU import do_train, do_eval, Predict
-from textMG.tf_serving.grpc_infer import pred_func
+from textMG.tf_serving.grpc_infer import Inference
+from textMG.tf_serving.producer import Producer
+
+from time import time
+import json
+
+dataset = Dataset()
 
 template = Jinja2Templates("/home/projects/TFpackageText/textMG/APIs/htmls")
 router = APIRouter(
     prefix="/api/v1",
     tags=["api/v1"],
 )
-
+def initializer():
+    #start producer
+    producer = Producer()
+    return producer
 
 @router.get("/")
 async def index(req:Request):
@@ -59,10 +69,29 @@ def prediction(req: InqueryModel):
 @router.post("/infer")
 def inference(req: InferModel):
     """call infer function"""
+    ts=time()
     logger.debug("inference api is called, the inference is started")
     logger.debug("batch_infer is: {}".format(req))
     print("batch_infer is: {}".format(req))
-    result = pred_func(InferModel.batch_infer, args.server, args.concurrency, args.num_tests)
-    logger.debug(result)
+    input = dataset.inquiry_process_pred(req.batch_infer)
+    logger.info("time_used for data processing: {:.4f}".format(time()-ts))
+    infer = Inference.doInfer(input, args.server)
+    logger.debug(infer.preds)
     print("******" * 15)
-    return Response(data=result, response_code=200, message="success", error=False)
+    return Response(data=json.dumps(infer.preds), response_code=200, message="success", error=False)
+
+@router.post("/pro_cons_infer")
+def producer_consumer_infer(req: InferModel):
+    """
+    call producer_consumer_infer function
+    please start Consumer component first prior to this API
+    """
+    logger.debug("iproducer_consumer_infer is called, the inference is started")
+    logger.debug("batch_infer is: {}".format(req))
+    print("batch_infer is: {}".format(req))
+    #push query into a queue
+    producer = initializer()
+    response = producer.call(req.batch_infer)
+    logger.debug(response)
+    print("******" * 15)
+    return Response(data=response, response_code=200, message="success", error=False)

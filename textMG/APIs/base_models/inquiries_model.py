@@ -17,7 +17,7 @@ class InqueryModel(BaseModel):
     # )
 
 class InferModel(BaseModel):
-    batch_infer: List[str] = Field(..., min_items=1, max_items=20, min_length=2, max_length=50,
+    batch_infer: List[str] = Field(..., min_items=1, max_items=1000, min_length=2, max_length=50,
                                description="must be a List, requirements: 'min_items=1, max_items=20, min_length=2, max_length=50'")
 
 

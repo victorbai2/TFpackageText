@@ -13,6 +13,7 @@
   - [Swagger docs](#Swagger-docs)
   - [Data Pipeline](#Data-Pipeline)
   - [Tensorflow serving](#Tensorflow-serving)
+  - [Project Automation](#Project-Automation)
   - [Examples](#Examples)
   - [pressure test](#pressure-test)
 - [Contributing](#Contributing)
@@ -53,7 +54,10 @@ or via APIs:
 http://localhost:5000/api/v1/train
 http://localhost:5000/api/v1/eval
 http://localhost:5000/api/v1/pred
+http://localhost:5000/api/v1/infer
+http://localhost:5000/api/v1/pro_cons_infer
 ```
+
 ### Rewrite pretrained model interface
 original source code is trained via tf.estimater which is hard to debug and 
 manipulate transformer models. The new interface will be able to run
@@ -79,20 +83,28 @@ Start API
 $ python api_run.py
 ```
 ![SwaggerUI](images/swaggerUI.png)
+
+or start API in a container
+```
+$ docker build -t api_docker .
+```
+```
+$ docker run -t -p 80:5000 -v /home/projects/TFpackageText/textMG:/home/projects --name=api_docker_service api_docker
+```
 ### Swagger docs
 ```
 http://localhost:5000/docs
 ```
 ### Data Pipeline
 data can be loaded directly
-```python
+```
 # load data from disk and generator.
 generator = Generator()
 iter = generator.get_next_patch(batch=2)
 el = next(iter)
 ```
 or via tf.data.Dataset.from_generator
-```python
+```
 train_dataset = tf.data.Dataset.from_generator(generator.get_next_patch,
                                                output_types={generator.input: tf.float32,
                                                              generator.output: tf.float32})
@@ -117,10 +129,22 @@ $ nohup docker run --name container_serving -p 8501:8501 -p 8500:8500 \
     ........
     --batching_parameters_file=/models/batch.config >  /home/projects/tf1_serving_log.out 2>&1 &
 ```
-call api below for tf serving reference
+call api for reference via tfserving
 ```
 curl -X 'POST' \
-  'http://192.168.1.14:5000/api/v1/infer' \
+  'http://localhost:5000/api/v1/infer' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "batch_infer": [
+    "string"
+  ]
+}'
+```
+or call reference api  in producer/consumer model
+```
+curl -X 'POST' \
+  'http://localhost:5000/api/v1/pro_cons_infer' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -170,7 +194,7 @@ Response Body:
         "pred_logits": "[0.17201262712478638, 0.24676887691020966, 0.22940053045749664, 0.15629342198371887, 0.19552461802959442]"
       }
     },
-    "time_used": "2.519162654876709"
+    "time_used": "0.519162654876709"
   },
   "code": 200,
   "message": "success",
@@ -205,11 +229,13 @@ Response Body:
 }
 ```
 
-### pressure test
+### simple pressure test
 ```
-$ab -p 'tensorAPI.json'  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 -t 120 'http://192.168.1.14:5000/api/pred'
+$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/infer
 ```
-
+```
+$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/pro_cons_infer
+```
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

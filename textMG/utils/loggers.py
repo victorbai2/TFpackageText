@@ -14,7 +14,7 @@ def create_logger():
     :return: logger
     """
     # create logger for "excel_processing"
-    log_dir = './logs/package_text.log'
+    log_dir = '/home/projects/TFpackageText/textMG/logs/package_text.log'
     print("created logger for 'tensorflow' at directory: {}".format(log_dir))
     logger = logging.getLogger('tensorflow')
     logger.setLevel(logging.DEBUG)

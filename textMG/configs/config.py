@@ -1,17 +1,5 @@
 import argparse
 
-# Parameters
-# num_gpusORcpus = 2
-# training_epochs = 5
-# learning_rate = 0.001
-# batch_size = 1024
-# display_step = 2
-
-# Network Parameters
-# num_input = 784 # MNIST data input (img shape: 28*28)
-# num_classes = 10 # MNIST total classes (0-9 digits)
-# dropout = 0.5 # Dropout, probability to keep units
-
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('--mode', type=str, help="Mode: 'train' or 'eval' or 'pred'")
 # parser.add_argument('--status',choices=['train','test'],default='train')
@@ -44,9 +32,9 @@ parser.add_argument('--display_step', type=int, default=1)
 parser.add_argument('--patience', type=int, default=2)
 parser.add_argument('--weights_for_loss', type=list, default=[1,1,1,1,1])
 #tensorflow serving
-parser.add_argument('--concurrency', type=int, default=500, help='maximum number of concurrent inference requests')
-parser.add_argument('--num_tests', type=int, default=1000, help='Number of test images')
-parser.add_argument('--server', type=str, default='192.168.1.14:8500', help='PredictionService host:port')
+parser.add_argument('--concurrency', type=int, default=10, help='maximum number of concurrent inference requests')
+parser.add_argument('--num_tests', type=int, default=1, help='Number of test images')
+parser.add_argument('--server', type=str, default='192.168.1.5:8500', help='PredictionService host:port')
 parser.add_argument('--print_outputs', type=bool, default=False, help='whether or not to print output predictions')
 #bert related args
 parser.add_argument('--is_pretrained', type=bool, default=False)

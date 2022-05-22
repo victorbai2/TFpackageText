@@ -30,6 +30,7 @@ class FullTokenizerV2(FullTokenizer):
 class Dataset:
     def __init__(self):
         self.value = None
+        self.vocab = self.load_vocab(args.path_data_dir, args.vocab_file)
 
     def load_raw_dataset(self, path_rawdata):
         files = [f for f in os.listdir(path_rawdata) if f.endswith(".csv")]
@@ -181,7 +182,7 @@ class Dataset:
         """
         t1=time()
         files = [f for f in os.listdir(data_dir) if f.endswith(".txt")]
-        vocab = self.load_vocab(data_dir, vocab_file)
+        vocab = self.vocab
         stopwords = self.load_stopwords(path_stopwords)
         x = []
         y = []
@@ -212,7 +213,7 @@ class Dataset:
         return x, y
 
     def inquiry_process_pred(self, inquiries):
-        vocab = self.load_vocab(args.path_data_dir, args.vocab_file)
+        vocab = self.vocab
         stopwords = self.load_stopwords(args.path_stopwords)
         if len(inquiries)==0:
             return "Please provide your inquiry"
