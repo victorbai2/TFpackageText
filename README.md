@@ -4,6 +4,7 @@
 <summary>Table of Contents</summary>
 
 - [Prerequisites](#Prerequisites)
+- [Structure](#Structure)
 - [Getting Started](#Getting-Started)
   - [Installation](#Installation)
   - [Usage](#Usage)
@@ -15,7 +16,7 @@
   - [Tensorflow serving](#Tensorflow-serving)
   - [Project Automation](#Project-Automation)
   - [Examples](#Examples)
-  - [pressure test](#pressure-test)
+  - [Simple pressure test](#simple-pressure-test)
 - [Contributing](#Contributing)
 - [License](#License)
 </details>
@@ -26,6 +27,40 @@
 * python >= 3.7
 * tensorflow == 1.15
 * fastapi == 0.75.2
+
+## Structure
+```
+.
+├── Dockerfile                              # API service on containers
+├── Jenkinsfile                             # Jenkins file used for automation
+├── README.md
+├── requirements.txt                        # required libraries
+├── startup_api.sh                          # start API service
+├── ..........
+└── textMG                                  # source directory
+    ├── APIs                                # API codes
+    │   └── routers                         # fastAPI routers
+    │       ├── data_generator.py
+    │       ├── health_check.py
+    │       └── tensorflow_service.py       # contains all training/eval/pred/refer APIs 
+    ├── configs                             # args config files
+    │   ├── config.py
+    │   └── config_multiGPU.py
+    ├── datasets                            # for tools used for data loading&processing
+    │   ├── data_loader.py                  # None
+    │   ├── dataset.py                      # tools for data manipulating
+    │   └── generator.py                    # generator for data batch 
+    ├── embeddings                          # word2vec model embeddings 
+    ├── logs                                # logs file
+    ├── models                              # deep learning models
+    ├── test                                # testing for each components
+    ├── tf_serving                          # tensorflow serving grpc and restful
+    ├── utils                               # utils tools
+    ├── main_multiGPU.py                    # main entrypoint for model training/eval/pred
+    ├── api_run.py                          # main entrypoint for API services 
+    ├── startup.sh                          # another entrypoint for model training/eval/pred
+    ├── ..........
+```
 
 ## Getting Started
 
@@ -229,7 +264,7 @@ Response Body:
 }
 ```
 
-### simple pressure test
+### Simple pressure test
 ```
 $ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/infer
 ```
