@@ -20,7 +20,8 @@ class Producer(object):
         self.queue_name='msg_queue'
         self.config = pika.ConnectionParameters(
             host='127.0.0.1',
-            credentials=pika.PlainCredentials('victor', 'Nicaine!'),
+            virtual_host='/rabbit_host',
+            credentials=pika.PlainCredentials('admin', 'admin'),
         )
         self.connection = pika.BlockingConnection(self.config)
         self.channel = self.connection.channel()
