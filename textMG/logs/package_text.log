@@ -1,7 +1,7 @@
-2022-06-06 00:08:15: INFO: tensorflow version: 1.15.0 
-2022-06-06 00:08:16: WARNING: From /home/projects/TFpackageText/textMG/models/bert_module.py:21: The name tf.AUTO_REUSE is deprecated. Please use tf.compat.v1.AUTO_REUSE instead.
+2022-06-06 00:27:17: INFO: tensorflow version: 1.15.0 
+2022-06-06 00:27:19: WARNING: From /home/projects/TFpackageText/textMG/models/bert_module.py:21: The name tf.AUTO_REUSE is deprecated. Please use tf.compat.v1.AUTO_REUSE instead.
  
-2022-06-06 00:08:16: INFO: vocabulary size:40001 
-2022-06-06 00:08:16: INFO: vocabulary size:40001 
-2022-06-06 00:08:16: INFO: vocabulary size:40001 
-2022-06-06 00:08:17: INFO: vocabulary size:40001 
+2022-06-06 00:27:19: INFO: vocabulary size:40001 
+2022-06-06 00:27:19: INFO: vocabulary size:40001 
+2022-06-06 00:27:19: INFO: vocabulary size:40001 
+2022-06-06 00:27:19: INFO: vocabulary size:40001 
