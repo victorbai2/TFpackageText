@@ -6,6 +6,8 @@
 @email: victor@bai.info
 @time: 2022/5/1 22:01
 """
+import sys
+sys.path.append('..')
 from fastapi import APIRouter, Request, BackgroundTasks
 from textMG.APIs.api_loggers.api_logger import logger
 from fastapi.templating import Jinja2Templates
@@ -25,8 +27,8 @@ dataset = Dataset()
 
 template = Jinja2Templates("/home/projects/TFpackageText/textMG/APIs/htmls")
 router = APIRouter(
-    prefix="/api/v1",
-    tags=["api/v1"],
+    prefix="/api/v1/models",
+    tags=["models"],
 )
 def initializer():
     #start producer

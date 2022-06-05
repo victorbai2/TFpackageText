@@ -126,6 +126,11 @@ $ docker build -t api_docker .
 ```
 $ docker run -t -p 80:5000 -v /home/projects/TFpackageText/textMG:/home/projects --name=api_docker_service api_docker
 ```
+or run api on production
+```
+$ gunicorn api_run:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 192.168.1.14:5000 --log-level debug
+```
+
 ### Swagger docs
 ```
 http://localhost:5000/docs

@@ -13,13 +13,32 @@ from APIs.routers.health_check import router as h_router
 from APIs.routers.data_generator import router as data_router
 from APIs.api_loggers.api_logger import logger
 from textMG.configs.config import args
+
+from textMG.APIs.db.database import Database
+from APIs.db.db_models import Base
+from APIs.routers.users import router as users_router
+from APIs.routers.users_token import router as token_router
+
 from time import time
+
+database = Database()
+engine = database.get_db_connection()
+
+# create db
+def init_db():
+    Base.metadata.create_all(engine)
+
+# drop db
+def drop_db():
+    Base.metadata.drop_all(engine)
 
 app = FastAPI()
 
 app.include_router(h_router)
 app.include_router(tf_router)
 app.include_router(data_router)
+app.include_router(token_router)
+app.include_router(users_router)
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -30,6 +49,8 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 if __name__ == '__main__':
+    # drop_db()
+    # init_db()
     logger.debug("the app will be started on port {}".format(args.port))
     uvicorn.run("api_run:app", host=args.host, port=args.port, workers=2,
                 log_level="debug")
