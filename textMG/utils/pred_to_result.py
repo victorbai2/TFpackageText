@@ -6,8 +6,10 @@
 @email: victor@bai.info
 @time: 2022/5/2 22:10
 """
+from typing import List, Dict
 
-def predToResult(prediction, label_dict):
+
+def predToResult(prediction: List[float], label_dict: Dict[str, int]) -> List[str]:
     result = []
     for pred in prediction:
         for key, value in label_dict.items():

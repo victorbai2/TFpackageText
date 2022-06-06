@@ -10,14 +10,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from textMG.APIs.api_loggers.api_logger import logger
 
+
 #get MYSQL_URL
 def get_mysqlURL(pathToUrl):
     with open(pathToUrl, 'r') as f:
         line = f.readlines()
         return line[0].strip()
 
-# MYSQL_URL = "mysql+mysqlconnector://victor:2008Baichun!@192.168.1.14:3306/fastapi"
-MYSQL_URL = get_mysqlURL(pathToUrl='/tmp/mysql_url.txt')
+
+MYSQL_URL = get_mysqlURL(pathToUrl='/home/victor/mysql_url.txt')
 POOL_SIZE = 3
 POOL_RECYCLE = 3600
 POOL_TIMEOUT = 15
@@ -40,11 +41,11 @@ class Database():
                 logger.critical('Error connecting to DB', exc_info=1)
         return self.engine
 
-    def get_db_session(self,engine):
+    def get_db_session(self, engine):
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
             return session
-        except Exception as ex:
+        except Exception as e:
             logger.critical('Error getting DB session', exc_info=1)
             return None

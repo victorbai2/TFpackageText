@@ -42,12 +42,14 @@
     │   └── routers                         # fastAPI routers
     │       ├── data_generator.py
     │       ├── health_check.py
-    │       └── tensorflow_service.py       # contains all training/eval/pred/refer APIs 
+    │       ├── tensorflow_service.py       # contains all training/eval/pred/refer APIs 
+    │       ├── users.py                    # contains user management APIs
+    │       └── .....
     ├── configs                             # args config files
     │   ├── config.py
     │   └── config_multiGPU.py
     ├── datasets                            # for tools used for data loading&processing
-    │   ├── data_loader.py                  # None
+    │   ├── data_loader.py                  
     │   ├── dataset.py                      # tools for data manipulating
     │   └── generator.py                    # generator for data batch 
     ├── embeddings                          # word2vec model embeddings 
@@ -59,7 +61,7 @@
     ├── main_multiGPU.py                    # main entrypoint for model training/eval/pred
     ├── api_run.py                          # main entrypoint for API services 
     ├── startup.sh                          # another entrypoint for model training/eval/pred
-    ├── ..........
+    └── ..........
 ```
 
 ## Getting Started
@@ -86,11 +88,11 @@ $ ./starup.sh -m [train|evel|pred]
 ```
 or via APIs:
 ```
-http://localhost:5000/api/v1/train
-http://localhost:5000/api/v1/eval
-http://localhost:5000/api/v1/pred
-http://localhost:5000/api/v1/infer
-http://localhost:5000/api/v1/pro_cons_infer
+http://localhost:5000/api/v1/models/train
+http://localhost:5000/api/v1/models/eval
+http://localhost:5000/api/v1/models/pred
+http://localhost:5000/api/v1/models/infer
+http://localhost:5000/api/v1/models/pro_cons_infer
 ```
 
 ### Rewrite pretrained model interface
@@ -122,13 +124,11 @@ $ python api_run.py
 or start API in a container
 ```
 $ docker build -t api_docker .
-```
-```
 $ docker run -t -p 80:5000 -v /home/projects/TFpackageText/textMG:/home/projects --name=api_docker_service api_docker
 ```
 or run api on production
 ```
-$ gunicorn api_run:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 192.168.1.14:5000 --log-level debug
+$ gunicorn api_run:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 --log-level debug
 ```
 
 ### Swagger docs
@@ -153,7 +153,7 @@ train_dataset = train_dataset.repeat().batch(args.batch_size * args.num_gpusORcp
 or via api
 ```
 curl -X 'GET' \
-  'http://localhost:5000/api/batch_load/2' \
+  'http://localhost:5000/api/models/batch_load/2' \
   -H 'accept: application/json'
 ```
 ### Tensorflow serving
@@ -172,7 +172,7 @@ $ nohup docker run --name container_serving -p 8501:8501 -p 8500:8500 \
 call api for reference via tfserving
 ```
 curl -X 'POST' \
-  'http://localhost:5000/api/v1/infer' \
+  'http://localhost:5000/api/v1/models/infer' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -184,7 +184,7 @@ curl -X 'POST' \
 or call reference api  in producer/consumer model
 ```
 curl -X 'POST' \
-  'http://localhost:5000/api/v1/pro_cons_infer' \
+  'http://localhost:5000/api/v1/models/pro_cons_infer' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -209,7 +209,7 @@ node("jekins-agent1"){
 predict:
 ```
 curl -X 'POST' \
-  'http://localhost:5000/api/v1/pred' \
+  'http://localhost:5000/api/v1/models/pred' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -244,7 +244,7 @@ Response Body:
 load data batch(batch_size=2):
 ```
 curl -X 'GET' \
-  'http://localhost:5000/api/v1/batch_load/2' \
+  'http://localhost:5000/api/v1/models/batch_load/2' \
   -H 'accept: application/json'
   
 Response Body:
@@ -271,10 +271,10 @@ Response Body:
 
 ### Simple pressure test
 ```
-$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/infer
+$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/models/infer
 ```
 ```
-$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/pro_cons_infer
+$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/models/pro_cons_infer
 ```
 
 ## Contributing

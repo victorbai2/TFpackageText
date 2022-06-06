@@ -13,7 +13,11 @@
 #             [0.18068056,0.17095093,0.22212254,0.2276705 ,0.19857548]]
 
 import json
-def jsonOutput(categories, pred_logits, label_dict, time_used):
+from typing import List, Dict, Union, Tuple
+
+
+def jsonOutput(categories: List[str], pred_logits: List[float], label_dict: Dict[str, int], time_used: float)\
+        -> Dict[str, Union[str, List, Tuple]]:
     pred_result = {}
     __categories = {}
     for i in range(len(categories)):

@@ -5,6 +5,7 @@ from utils.loggers import logger
 
 warnings.filterwarnings('ignore')
 import tensorflow as tf
+
 # tf.compat.v1.enable_eager_execution()
 # tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
 logger.info("tensorflow version: {}".format(tf.__version__))
@@ -12,6 +13,7 @@ logger.info("tensorflow version: {}".format(tf.__version__))
 import numpy as np
 from collections import deque
 from time import time
+from typing import Optional, Dict, List, Tuple, Any, Union
 from sklearn.metrics import f1_score
 import argparse
 
@@ -24,7 +26,8 @@ from utils import metrics, pred_to_result, json_output
 from models.bert_module import Bert_module
 from models.bertBaseModule import BertConfig
 
-def loader_before_training(is_pretrained=args.is_pretrained):
+
+def loader_before_training(is_pretrained: bool) -> Tuple[Any]:
     # train on CPU or GPU
     device_set(args.device_type)
     # load evaluation data
@@ -37,19 +40,20 @@ def loader_before_training(is_pretrained=args.is_pretrained):
     else:
         input_ids_eval, input_masks_eval, input_type_ids_eval, y_output_eval = \
             dataset.process_data_pretrained(args.path_data_dir,
-                                           args.pretrained_vocab_file,
-                                           args.path_stopwords,
-                                           max_len=args.max_len,
-                                           is_token_b=False,
-                                           n_examples=50)
+                                            args.pretrained_vocab_file,
+                                            args.path_stopwords,
+                                            max_len=args.max_len,
+                                            is_token_b=False,
+                                            n_examples=50)
 
         bert_config = BertConfig.from_json_file(args.bert_config_file)
         # load model
         model = Bert_module()
         return dataset, model, bert_config, input_ids_eval, input_masks_eval, input_type_ids_eval, y_output_eval
 
+
 # do_train
-def do_train():
+def do_train() -> Dict[str, Union[str, List, Tuple]]:
     start = time()
     # Place all ops on CPU by default
     with tf.device('/cpu:0'):
@@ -64,7 +68,7 @@ def do_train():
             # do multiGPU training
             train_op, loss_patch_ave, train_initializer, X_ids_batchG, X_masks_batchG, X_type_ids_batchG, \
             Y_batchG = multi_GPU_training(model)
-            #get initial variable from pretrained model
+            # get initial variable from pretrained model
             if args.init_checkpoint:
                 load_init_from_checkpoint(args.init_checkpoint)
 
@@ -120,18 +124,18 @@ def do_train():
 
                 # get the accuracy for train and test dataset
                 if not args.is_pretrained:
-                    #train accuracy
+                    # train accuracy
                     x_train = x_eval[:250]
                     y_train = y_eval[:250]
                     pred_tr = model(x_train, args.num_classes, args.dropout,
-                                       reuse=True, is_training=False)['output']
+                                    reuse=True, is_training=False)['output']
                     train_acc_ = metrics.accuracy_cal(pred_tr, y_train)
                     train_acc = sess.run(train_acc_)
                     # test accuracy
                     x_test = x_eval[250:]
                     y_test = y_eval[250:]
                     pred_te = model(x_test, args.num_classes, args.dropout,
-                                       reuse=True, is_training=False)['output']
+                                    reuse=True, is_training=False)['output']
                     test_acc_ = metrics.accuracy_cal(pred_te, y_test)
                     test_acc = sess.run(test_acc_)
                 else:
@@ -145,7 +149,7 @@ def do_train():
                         'use_one_hot_embeddings': False,
                     }
                     pred_tr = model(args.num_classes, args.max_len, args.hidden_size, reuse=True,
-                                    is_training=False, ** train_input_params)['output']
+                                    is_training=False, **train_input_params)['output']
                     train_acc_ = metrics.accuracy_cal(pred_tr, y_output_eval[:10])
                     train_acc = sess.run(train_acc_)
                     # test accuracy
@@ -158,7 +162,7 @@ def do_train():
                         'use_one_hot_embeddings': False,
                     }
                     pred_te = model(args.num_classes, args.max_len, args.hidden_size, reuse=True,
-                                    is_training=False, ** test_input_params)['output']
+                                    is_training=False, **test_input_params)['output']
                     test_acc_ = metrics.accuracy_cal(pred_te, y_output_eval[10:])
                     test_acc = sess.run(test_acc_)
 
@@ -201,15 +205,18 @@ def do_train():
                         test_macro = f1_score(np.argmax(y_test, -1), np.argmax(pred_te.eval(session=sess), -1),
                                               average='macro')
                     else:
-                        train_macro = f1_score(np.argmax(y_output_eval[:10], -1), np.argmax(pred_tr.eval(session=sess), -1),
+                        train_macro = f1_score(np.argmax(y_output_eval[:10], -1),
+                                               np.argmax(pred_tr.eval(session=sess), -1),
                                                average='macro')
                         # F1_score for test
-                        test_macro = f1_score(np.argmax(y_output_eval[10:], -1), np.argmax(pred_te.eval(session=sess), -1),
+                        test_macro = f1_score(np.argmax(y_output_eval[10:], -1),
+                                              np.argmax(pred_te.eval(session=sess), -1),
                                               average='macro')
 
                     logger.info(
                         "Epoch: {:02d}/{:02d}, steps: {}/{}, avg_train_cost: {:.5f}, train_acc: {:.5f}, test_acc: {:.5f}, time_used: "
-                        "{:.2f}s".format(epoch, args.training_epochs, i, total_batch, avg_train_cost, train_acc, test_acc, time_used))
+                        "{:.2f}s".format(epoch, args.training_epochs, i, total_batch, avg_train_cost, train_acc,
+                                         test_acc, time_used))
                     logger.info("f1_score: train_macro:{:.4f}, test_macro:{:.4f}"
                                 .format(train_macro, test_macro))
                     train_result = {
@@ -227,7 +234,8 @@ def do_train():
                     saver.save(best_sess, args.model_dir + "cnn_category.ckpt-" + str(best_epoch))
                     logger.info("saved model to: {}".format(args.model_dir))
                     # call build_SavedModel to build a SavedModel for tensor serving
-                    build_SavedModel(model, args.export_path_serving, args.savedmodel_version, X_batch_numGPU, best_sess)
+                    build_SavedModel(model, args.export_path_serving, args.savedmodel_version, X_batch_numGPU,
+                                     best_sess)
                 else:
                     saver.save(best_sess, args.model_dir_save_pretrain + "pretrained_category.ckpt-" +
                                str(best_epoch))
@@ -242,10 +250,10 @@ def do_train():
 
 
 # do_eval
-def do_eval():
+def do_eval() -> Dict[str, Union[str, List, Tuple]]:
     with tf.device('/cpu:0'):
         # call loader before start training or evaluating
-        _, model, x_eval, y_eval = loader_before_training()
+        _, model, x_eval, y_eval = loader_before_training(is_pretrained=args.is_pretrained)
 
         with tf.Graph().as_default() as g:
             t1 = time()
@@ -285,14 +293,14 @@ class Predict:
     def __init__(self):
         self.pred_result = None
 
-    def do_pred(self, inquires):
+    def do_pred(self, queries: List[str]):
         with tf.device('/cpu:0'):
             # load model
             model = Model_cnn()
             with tf.Graph().as_default() as g:
                 t1 = time()
-                logger.info("input_length is: {}".format(len(inquires[0])))
-                input = Dataset().inquiry_process_pred(inquires)
+                logger.info("input_length is: {}".format(len(queries[0])))
+                input = Dataset().inquiry_process_pred(queries)
                 pred_logit = model(input, args.num_classes, args.dropout, reuse=False, is_training=False)['output']
                 prediction = tf.argmax(pred_logit, -1)
                 init = tf.global_variables_initializer()
@@ -316,7 +324,7 @@ class Predict:
                 self.pred_result = json_output.jsonOutput(categories, pred_logits.tolist(), label_dict, time_used)
                 logger.debug(self.pred_result)
 
-    def get_pred_result(self):
+    def get_pred_result(self) -> Dict[str, Union[str, List, Tuple]]:
         return self.pred_result
 
 
@@ -330,17 +338,17 @@ if __name__ == '__main__':
         eval_result = do_eval()
     elif args.mode == 'pred':
         logger.info("prediction is called")
-        inquires = []
+        queries = []
         parser_parent = argparse.ArgumentParser(description=__doc__,
                                                 formatter_class=argparse.RawDescriptionHelpFormatter, parents=[parser])
         # parser_parent.add_argument('--input_shape', nargs='+', type=int, required=True,
         #                            help="the input_shape requires two arguments, e.g. 'input_shape 1 784' ")
         args = parser_parent.parse_args(remaining_argv)
-        inquiry = input("Please enter a sentence: ")
-        # inquiry = "我想去旅行"
-        inquires.append(inquiry)
+        query = input("Please enter a sentence: ")
+        # query = "我想去旅行"
+        queries.append(query)
         pre = Predict()
-        pre.do_pred(inquires)
+        pre.do_pred(queries)
     else:
         logger.info(parser.print_help())
         logger.info("please specify the mode: 'train' or 'eval' or 'pred'")

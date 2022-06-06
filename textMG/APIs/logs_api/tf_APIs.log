@@ -1,0 +1,3 @@
+2022-06-06 10:00:13: DEBUG: prediction api is called, the prediction is started 
+2022-06-06 10:00:13: DEBUG: inquiries is: query=['string'] 
+2022-06-06 10:00:31: DEBUG: {'records': {'0': {'category': 'entertainment', 'label': '1', 'pred_logits': '[0.013028537854552269, 0.32980093359947205, 0.20372000336647034, 0.2901400029659271, 0.16331055760383606]'}}, 'time_used': '9.623966693878174'} 
