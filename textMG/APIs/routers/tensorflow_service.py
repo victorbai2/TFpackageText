@@ -8,7 +8,7 @@
 """
 import sys
 sys.path.append('..')
-from fastapi import APIRouter, Request, BackgroundTasks
+from fastapi import APIRouter, Request, BackgroundTasks, Depends
 from textMG.APIs.api_loggers.api_logger import logger
 from fastapi.templating import Jinja2Templates
 from textMG.APIs.base_models.inquiries_model import InqueryModel, InferModel
@@ -19,6 +19,7 @@ from textMG.datasets.dataset import Dataset
 from textMG.main_multiGPU import do_train, do_eval, Predict
 from textMG.tf_serving.grpc_infer import Inference
 from textMG.tf_serving.producer import Producer
+from textMG.APIs.routers.users_token import get_current_user
 
 from time import time
 import json
@@ -29,6 +30,7 @@ template = Jinja2Templates("/home/projects/TFpackageText/textMG/APIs/htmls")
 router = APIRouter(
     prefix="/api/v1/models",
     tags=["models"],
+    dependencies=[Depends(get_current_user)]
 )
 def initializer():
     #start producer

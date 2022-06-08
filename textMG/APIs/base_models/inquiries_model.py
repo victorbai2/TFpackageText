@@ -6,8 +6,9 @@
 @email: victor@bai.info
 @time: 2022/5/2 20:42
 """
+
 from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Union
 
 
 class InqueryModel(BaseModel):
@@ -16,6 +17,7 @@ class InqueryModel(BaseModel):
     # description: Optional[str] = Field(
     #     None, title="The description of the inquiry", max_length=50
     # )
+
 
 class InferModel(BaseModel):
     batch_infer: List[str] = Field(..., min_items=1, max_items=1000, min_length=2, max_length=50,
@@ -52,3 +54,16 @@ class UserUpdateRequest(BaseModel):
     email: EmailStr = Field(None, title="user Email")
     is_active: bool = Field(
         True, description="Value must be either True or False")
+
+
+class UserResponse(UserUpdateRequest):
+    email: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None

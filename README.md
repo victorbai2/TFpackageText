@@ -155,6 +155,8 @@ or via api
 curl -X 'GET' \
   'http://localhost:5000/api/models/batch_load/2' \
   -H 'accept: application/json'
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2aWM3IiwiZXhwIjoxNjU0NzA2NDk0fQ.VPNdR2Ow0vwl4Yx3JYmErSdCZP6G8RufSUAk1lavR2M'
+
 ```
 ### Tensorflow serving
 after training, the model for tf servering is saved to different path for restful and grpc.
@@ -175,6 +177,7 @@ curl -X 'POST' \
   'http://localhost:5000/api/v1/models/infer' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2aWM3IiwiZXhwIjoxNjU0NzA2NDk0fQ.VPNdR2Ow0vwl4Yx3JYmErSdCZP6G8RufSUAk1lavR2M' \
   -d '{
   "batch_infer": [
     "string"
@@ -187,6 +190,7 @@ curl -X 'POST' \
   'http://localhost:5000/api/v1/models/pro_cons_infer' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2aWM3IiwiZXhwIjoxNjU0NzA2NDk0fQ.VPNdR2Ow0vwl4Yx3JYmErSdCZP6G8RufSUAk1lavR2M' \
   -d '{
   "batch_infer": [
     "string"
@@ -212,6 +216,7 @@ curl -X 'POST' \
   'http://localhost:5000/api/v1/models/pred' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2aWM3IiwiZXhwIjoxNjU0NzA2NDk0fQ.VPNdR2Ow0vwl4Yx3JYmErSdCZP6G8RufSUAk1lavR2M' \
   -d '{
   "inquiry": [
     "在北京举办...", "三点不足导致球队...."...
@@ -245,7 +250,8 @@ load data batch(batch_size=2):
 ```
 curl -X 'GET' \
   'http://localhost:5000/api/v1/models/batch_load/2' \
-  -H 'accept: application/json'
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2aWM3IiwiZXhwIjoxNjU0NzA2NDk0fQ.VPNdR2Ow0vwl4Yx3JYmErSdCZP6G8RufSUAk1lavR2M' \
   
 Response Body:
 {
@@ -271,10 +277,14 @@ Response Body:
 
 ### Simple pressure test
 ```
-$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/models/infer
+$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2aWM3IiwiZXhwIjoxNjU0NzA2NDk0fQ.VPNdR2Ow0vwl4Yx3JYmErSdCZP6G8RufSUAk1lavR2M' \
+  -c 500 -n 500 http://localhost:5000/api/v1/models/infer
 ```
 ```
-$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  -c 500 -n 500 http://localhost:5000/api/v1/models/pro_cons_infer
+$ ab -p tensorAPI.json  -T 'application/json' -H 'Content-Type: application/json'  \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ2aWM3IiwiZXhwIjoxNjU0NzA2NDk0fQ.VPNdR2Ow0vwl4Yx3JYmErSdCZP6G8RufSUAk1lavR2M' \
+  -c 500 -n 500 http://localhost:5000/api/v1/models/pro_cons_infer
 ```
 
 ## Contributing
