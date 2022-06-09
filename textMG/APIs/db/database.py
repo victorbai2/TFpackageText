@@ -9,6 +9,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from textMG.APIs.api_loggers.api_logger import logger
+from typing import Any
 
 
 #get MYSQL_URL
@@ -30,7 +31,7 @@ class Database():
         self.connection_is_active = False
         self.engine = None
 
-    def get_db_connection(self):
+    def get_db_connection(self) -> create_engine:
         if self.connection_is_active == False:
             connect_args = {"connect_timeout":CONNECT_TIMEOUT}
             try:
@@ -39,13 +40,14 @@ class Database():
                 return self.engine
             except Exception as e:
                 logger.critical('Error connecting to DB', exc_info=1)
+                raise e
         return self.engine
 
-    def get_db_session(self, engine):
+    def get_db_session(self, engine: create_engine) -> sessionmaker:
         try:
             Session = sessionmaker(bind=engine)
             session = Session()
             return session
         except Exception as e:
             logger.critical('Error getting DB session', exc_info=1)
-            return None
+            raise e

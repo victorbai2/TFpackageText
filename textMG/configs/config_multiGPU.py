@@ -6,9 +6,10 @@ from textMG.datasets.generator import Generator
 from textMG.utils.loss import loss_function, weighted_loss
 from textMG.utils.loggers import logger
 from textMG.models.bertBaseModule import BertConfig, get_assignment_map_from_checkpoint
+from typing import Callable, Tuple, List
 
 
-def multi_GPU_training(model):
+def multi_GPU_training(model: Callable) -> Tuple:
     tower_grads = []
     reuse_vars = False
     loss_patch_list = []
@@ -130,7 +131,8 @@ def multi_GPU_training(model):
     else:
         return train_op, loss_patch_ave, train_initializer, X_ids_batchG, X_masks_batchG, X_type_ids_batchG, Y_batchG
 
-def build_iterator(generator):
+
+def build_iterator(generator: Callable) -> Tuple:
     logger.info("load the data from tf builtin 'tf.data.Dataset.from_generator' ")
     with tf.device('/cpu:1'):
         if not args.is_pretrained:
@@ -158,7 +160,7 @@ def build_iterator(generator):
 
 # site for set logical device
 # https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/guide/gpu.ipynb#scrollTo=AqPo9ltUA_EY
-def device_set(device_type, memory_limit=None):
+def device_set(device_type: str, memory_limit=None) -> None:
     logger.info("use {} to train model".format(device_type))
     memory_limit = None if device_type == "CPU" else 1024
     gpuORcpu = tf.config.experimental.list_physical_devices(device_type)
@@ -178,8 +180,9 @@ def device_set(device_type, memory_limit=None):
     else:
         logger.critical("Error: there is no physical device: {}".format(gpuORcpu))
 
+
 # Build the function to average the gradients
-def average_gradients(tower_grads):
+def average_gradients(tower_grads: List[tf.Tensor]) -> List[tf.Tensor]:
     average_grads = []
     for grad_and_vars in zip(*tower_grads):
         # Note that each grad_and_vars looks like the following:
@@ -208,9 +211,9 @@ def average_gradients(tower_grads):
 # So we need a custom device function, to assign all variables to '/cpu:0'
 # Note: If GPUs are peered, '/gpu:0' can be a faster option
 
-PS_OPS = ['Variable', 'VariableV2', 'AutoReloadVariable']
 
-def assign_to_device(device, ps_device='/cpu:0'):
+PS_OPS = ['Variable', 'VariableV2', 'AutoReloadVariable']
+def assign_to_device(device: str, ps_device: str='/cpu:0') -> Callable:
     def _assign(op):
         node_def = op if isinstance(op, tf.NodeDef) else op.node_def
         if node_def.op in PS_OPS:
@@ -220,7 +223,8 @@ def assign_to_device(device, ps_device='/cpu:0'):
 
     return _assign
 
-def load_init_from_checkpoint(init_checkpoint):
+
+def load_init_from_checkpoint(init_checkpoint: str) -> None:
     # here to restore pretrained model
     tvars = tf.trainable_variables()
     (assignment_map, initialized_variable_names) = get_assignment_map_from_checkpoint(

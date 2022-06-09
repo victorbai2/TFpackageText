@@ -9,6 +9,7 @@
 import sys
 import logging
 
+
 def create_logger():
     """
     :return: logger
@@ -38,6 +39,7 @@ def create_logger():
     logger.addHandler(console_handler)
 
     return logger
+
 
 logger = create_logger()
 

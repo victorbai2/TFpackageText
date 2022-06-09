@@ -23,7 +23,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from textMG.APIs.base_models.inquiries_model import Token, TokenData, UserUpdateRequest, UserRequest
 from fastapi import Depends, status, Security
 from datetime import datetime, timedelta
-from textMG.APIs.routers.users_token import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from textMG.APIs.routers.users_token import authenticate_user, create_access_token, token_user
 
 database = Database()
 engine = database.get_db_connection()
@@ -60,7 +60,7 @@ async def access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     '''token used for data transfer'''
     user = authenticate_user(form_data.username, form_data.password)
     access_token = create_access_token(
-        data={"sub": user.first_name}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        data={"sub": user.first_name}, expires_delta=timedelta(minutes=token_user.ACCESS_TOKEN_EXPIRE_MINUTES))
     return {"access_token": access_token, "token_type": "bearer"}
 
 

@@ -1,7 +1,9 @@
 import tensorflow as tf
 from textMG.utils.loggers import logger
+from typing import Union, List
 
-def loss_function(pred, y):
+
+def loss_function(pred: tf.Tensor, y: Union[tf.Tensor, List]) -> tf.Tensor:
     if not isinstance(pred, tf.Tensor):
         pred = y = tf.cast(pred, dtype=tf.float32)
     if not isinstance(y, tf.Tensor):
@@ -10,7 +12,9 @@ def loss_function(pred, y):
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
     return loss
 
-def weighted_loss(pred, y, weights, use_predefined_loss=True):
+
+def weighted_loss(pred: tf.Tensor, y: Union[tf.Tensor, List], weights: List[Union[int, float]],
+                  use_predefined_loss: bool = True) -> tf.Tensor:
     if not isinstance(pred, tf.Tensor):
         pred = y = tf.cast(pred, dtype=tf.float32)
     weights = tf.cast(weights, dtype=tf.float32)

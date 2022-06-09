@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Security
 from pydantic import BaseModel, Field, ValidationError
 from typing import Optional
-from textMG.APIs.db.db_models import User
+from textMG.APIs.db.db_models import User, TokenUser
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import json
@@ -21,11 +21,6 @@ from textMG.APIs.api_loggers.api_logger import logger
 from textMG.APIs.base_models.inquiries_model import Token, TokenData, UserUpdateRequest, UserRequest, UserResponse
 from sqlalchemy import and_, desc
 
-# run the following on terminal to generate a secret key
-# openssl rand -hex 32
-SECRET_KEY = "ec039bcb8eada04c0de3cea9ced7440b949f6e2dadafd61ae1f8b687c214b4a9"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -34,35 +29,47 @@ database = Database()
 engine = database.get_db_connection()
 
 
-def get_password_hash(password):
+# get SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES from db
+def get_secretKey():
+    session = database.get_db_session(engine)
+    try:
+        token_user = session.query(TokenUser).filter(TokenUser.uid == 1).one()
+        return token_user
+    except Exception:
+        logger.critical('token can not be retrieved from db exception', exc_info=1)
+        raise HTTPException(status_code=400, detail="token can not be retrieved from db")
+token_user = get_secretKey()
+
+
+def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(data: dict, expires_delta: timedelta):
+def create_access_token(data: dict, expires_delta: timedelta) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, token_user.SECRET_KEY, algorithm=token_user.ALGORITHM)
     return encoded_jwt
 
 
-def get_user(username: str):
+def get_user(username: str) -> User:
     """retrieve an user from db"""
     session = database.get_db_session(engine)
     try:
         user = session.query(User).filter(
             and_(User.first_name == username, User.is_active == True)).one()
         return user
-    except Exception as e:
+    except Exception:
         logger.critical('user Not found exception', exc_info=1)
-        raise e
+        raise HTTPException(status_code=400, detail="user Not found")
 
 
-def authenticate_user(username: str, password: str):
+def authenticate_user(username: str, password: str) -> User:
     user = get_user(username)
     if not user:
         logger.critical(HTTPException(status_code=400, detail="user does not exist"))
@@ -73,14 +80,14 @@ def authenticate_user(username: str, password: str):
     return user
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserResponse:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, token_user.SECRET_KEY, algorithms=[token_user.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
@@ -101,13 +108,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     user_dict = {"id": user.id,
                  "first_name": user.first_name,
                  "last_name": user.last_name,
-                 "email": user.last_name,
+                 "email": user.email,
                  "is_active": user.is_active}
     return UserResponse(**user_dict)
 
 
-async def get_current_active_user(current_user: UserResponse = Security(get_current_user)):
-    if not current_user.is_active:
-        logger.critical('Inactive user')
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+# async def get_current_active_user(current_user: UserResponse = Security(get_current_user)) -> UserResponse:
+#     if not current_user.is_active:
+#         logger.critical('Inactive user')
+#         raise HTTPException(status_code=400, detail="Inactive user")
+#     return current_user

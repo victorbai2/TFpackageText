@@ -23,6 +23,7 @@ from textMG.APIs.routers.users_token import get_current_user
 
 from time import time
 import json
+from typing import Dict, Any
 
 dataset = Dataset()
 
@@ -38,27 +39,29 @@ def initializer():
     return producer
 
 @router.get("/")
-async def index(req:Request):
+async def index(req: Request):
     """load the API welcome index page"""
     logger.debug("index api is called")
     return template.TemplateResponse("index.html", context={"request":req})
 
 @router.post("/train")
-async def train():
+async def train() -> Dict[str, Any]:
     """call do_train() function"""
     logger.debug("train api is called, the model training is started")
     train_result = do_train()
     return Response(data=train_result, response_code=200, message="success", error=False)
 
+
 @router.post("/evel")
-def evaluate():
+def evaluate() -> Dict[str, Any]:
     """call do_eval function"""
     logger.debug("evaluate api is called, the evaluation is started")
     eval_result = do_eval()
     return Response(data=eval_result, response_code=200, message="success", error=False)
 
+
 @router.post("/pred")
-def prediction(req: InqueryModel):
+def prediction(req: InqueryModel) -> Dict[str, Any]:
     """call do_pred function"""
     logger.debug("prediction api is called, the prediction is started")
     logger.debug("inquiries is: {}".format(req))
@@ -70,8 +73,9 @@ def prediction(req: InqueryModel):
     print("******" * 15)
     return Response(data=pred.get_pred_result(), response_code=200, message="success", error=False)
 
+
 @router.post("/infer")
-def inference(req: InferModel):
+def inference(req: InferModel) -> Dict[str, Any]:
     """call infer function"""
     ts=time()
     logger.debug("inference api is called, the inference is started")
@@ -84,8 +88,9 @@ def inference(req: InferModel):
     print("******" * 15)
     return Response(data=json.dumps(infer.preds), response_code=200, message="success", error=False)
 
+
 @router.post("/pro_cons_infer")
-def producer_consumer_infer(req: InferModel):
+def producer_consumer_infer(req: InferModel) -> Dict[str, Any]:
     """
     call producer_consumer_infer function
     please start Consumer component first prior to this API

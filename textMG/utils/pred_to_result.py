@@ -9,7 +9,7 @@
 from typing import List, Dict
 
 
-def predToResult(prediction: List[float], label_dict: Dict[str, int]) -> List[str]:
+def predToResult(prediction: List[int], label_dict: Dict[str, int]) -> List[str]:
     result = []
     for pred in prediction:
         for key, value in label_dict.items():

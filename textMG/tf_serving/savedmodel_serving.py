@@ -3,9 +3,9 @@ import os
 import shutil
 from textMG.configs.config import args
 
+
 def build_SavedModel(model_network, export_path_serving, savedmodel_version, X, best_sess):
     """
-
     @rtype: object
     """
     if isinstance(savedmodel_version, str):

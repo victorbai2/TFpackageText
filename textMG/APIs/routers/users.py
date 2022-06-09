@@ -12,8 +12,9 @@ from textMG.APIs.base_models.inquiries_model import UserRequest, UserUpdateReque
 from textMG.APIs.base_models.responses import Response
 from textMG.APIs.db.db_models import User
 from textMG.APIs.db.database import Database
-from textMG.APIs.routers.users_token import get_password_hash, get_current_active_user, get_current_user
+from textMG.APIs.routers.users_token import get_password_hash, get_current_user
 from sqlalchemy import and_, desc
+from typing import Dict, Any
 
 
 router = APIRouter(
@@ -28,7 +29,7 @@ engine = database.get_db_connection()
 
 
 @router.post("/", response_description="user data added into the database")
-async def signup(req: UserRequest):
+async def signup(req: UserRequest) -> Dict[str, Any]:
     """add new a new user"""
     new_user = User()
     new_user.first_name = req.first_name
@@ -37,18 +38,22 @@ async def signup(req: UserRequest):
     new_user.hashed_password = get_password_hash(req.password)
     new_user.is_active = req.is_active
     session = database.get_db_session(engine)
-    session.add(new_user)
-    session.flush()
-    # get id of the inserted user
-    session.refresh(new_user, attribute_names=['id'])
-    data = {"user_id": new_user.id}
+    try:
+        session.add(new_user)
+        session.flush()
+        # get id of the inserted user
+        session.refresh(new_user, attribute_names=['id'])
+        data = {"user_id": new_user.id}
+    except Exception:
+        logger.critical('this is exception', exc_info=1)
+        raise HTTPException(status_code=400, detail="user can not be signed up")
     session.commit()
     session.close()
     return Response(data, 200, "user added successfully.", False)
 
 
 @router.put("/")
-async def update_user(req: UserUpdateRequest):
+async def update_user(req: UserUpdateRequest) -> Dict[str, Any]:
     """update an existing user"""
     user_id = req.id
     session = database.get_db_session(engine)
@@ -74,16 +79,16 @@ async def update_user(req: UserUpdateRequest):
         user_dict = {"id": user.id,
                      "first_name": user.first_name,
                      "last_name": user.last_name,
-                     "email": user.last_name,
+                     "email": user.email,
                      "is_active": user.is_active}
         return Response(UserResponse(**user_dict), response_code, response_msg, error)
-    except Exception as e:
+    except Exception:
         logger.critical('this is exception', exc_info=1)
-        raise e
+        raise HTTPException(status_code=400, detail="user can not be updated")
 
 
 @router.delete("/")
-async def delete_user(user_id: str):
+async def delete_user(user_id: str) -> Dict[str, Any]:
     """delete an existing user"""
     session = database.get_db_session(engine)
     try:
@@ -94,46 +99,45 @@ async def delete_user(user_id: str):
         response_msg = "user is deleted successfully"
         response_code = 200
         error = False
-        data = {"user_id": user_id}
+        user = {"user_id": user_id}
         if is_user_updated == 0:
             response_msg = "user not deleted. No user found with this id :" + \
                 str(user_id)
             error = True
-            data = None
-        return Response(data, response_code, response_msg, error)
-    except Exception as e:
+            user = None
+        return Response(user, response_code, response_msg, error)
+    except Exception:
         logger.critical('this is exception', exc_info=1)
-        raise e
+        raise HTTPException(status_code=400, detail="user can not be deleted")
 
 
 @router.get("/")
-async def get_user(user_id: str):
+async def get_user(user_id: str) -> Dict[str, Any]:
     """retrieve an user from db"""
     session = database.get_db_session(engine)
     response_message = "user retrieved successfully"
     try:
         user = session.query(User).filter(
             and_(User.id == user_id, User.is_active == True)).one()
-    except Exception as e:
-        response_message = "user Not found"
+    except Exception:
         logger.critical('user Not found exception', exc_info=1)
-        raise {response_message: response_message}
+        raise HTTPException(status_code=400, detail="user does not exist")
     user_dict = {"id": user.id,
                  "first_name": user.first_name,
                  "last_name": user.last_name,
-                 "email": user.last_name,
+                 "email": user.email,
                  "is_active": user.is_active}
     return Response(UserResponse(**user_dict), 200, response_message, False)
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: UserResponse = Depends(get_current_user)):
+async def get_user_me(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
     '''get the current user'''
     return current_user
 
 
 @router.get("/all")
-async def get_all_users(page_size: int, page: int):
+async def get_all_users(page_size: int, page: int) -> Dict[str, Any]:
     """get all users"""
     session = database.get_db_session(engine)
     users = session.query(User).filter(User.is_active == True).order_by(
@@ -143,7 +147,7 @@ async def get_all_users(page_size: int, page: int):
         user_dict = {"id": user.id,
                      "first_name": user.first_name,
                      "last_name": user.last_name,
-                     "email": user.last_name,
+                     "email": user.email,
                      "is_active": user.is_active}
         user_list.append(user_dict)
     return Response(user_list, 200, "users retrieved successfully.", False)

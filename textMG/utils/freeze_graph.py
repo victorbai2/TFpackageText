@@ -18,6 +18,7 @@ import tensorflow as tf
 import argparse
 import shutil
 
+
 def set_logger(context, verbose=False):
     if os.name == 'nt':  # for Windows
         return NTLogger(context, verbose)

@@ -16,8 +16,9 @@ router = APIRouter(
     tags=["health_check"],
 )
 
+
 @router.get("/")
-async def health(req:Request):
+async def health(req: Request):
     """get the tf API health status"""
     logger.info("health check api is called")
     return template.TemplateResponse("health_check.html", context={"request":req})

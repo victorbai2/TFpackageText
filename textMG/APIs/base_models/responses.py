@@ -7,8 +7,11 @@
 @time: 2022/5/3 00:58
 """
 import json
+from typing import Union, List, Dict, Any
 
-def Response(data, response_code, message, error):
+
+def Response(data: Union[List, Dict[str, Any], str], response_code: int, message: str, error: Union[bool, str]) \
+        -> Dict[str, Any]:
     res = {
         "data": data,
         "code": response_code,

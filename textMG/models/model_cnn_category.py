@@ -3,17 +3,21 @@ import tensorflow as tf
 from textMG.configs.config import args
 from textMG.embeddings.word_embeddings import Get_embeddings
 from textMG.datasets.generator import Generator
+from typing import Tuple, Union, List, Dict
+
 
 class Model_cnn:
+
     def __init__(self):
         self.embeddings = Get_embeddings().get_embeddings()
 
-    def placeholder_init(self, num_input, num_classes):
+    def placeholder_init(self, num_input: int, num_classes: int) -> Tuple[tf.Tensor]:
         X = tf.placeholder(tf.float32, [None, num_input], name='x_input')
         Y = tf.placeholder(tf.float32, [None, num_classes], name='y_output')
         return X, Y
 
-    def __call__(self, input_x, num_classes, dropout, reuse, is_training, *args, **kwargs):
+    def __call__(self, input_x: Union[List, tf.Tensor], num_classes: str, dropout: float, reuse: bool,
+                 is_training: bool, *args, **kwargs) -> Dict[str, tf.Tensor]:
         # Define a scope for reusing the variables
         with tf.variable_scope('ConvNet', reuse=reuse):
             embeddings = tf.get_variable(name="w_embedding", shape=self.embeddings.shape,

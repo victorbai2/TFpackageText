@@ -39,11 +39,16 @@
 ├── ..........
 └── textMG                                  # source directory
     ├── APIs                                # API codes
-    │   └── routers                         # fastAPI routers
+    │   ├── api_logger                      # API logger
+    │   ├── base_models                     # pydantic BaseModel
+    │   ├── db                              # SQLAlchemy table definition
+    │   ├── html                            # html files
+    │   └── routers                         # API routers
     │       ├── data_generator.py
     │       ├── health_check.py
-    │       ├── tensorflow_service.py       # contains all training/eval/pred/refer APIs 
-    │       ├── users.py                    # contains user management APIs
+    │       ├── tensorflow_service.py       # all training/eval/pred/refer APIs 
+    │       ├── users.py                    # user management APIs
+    │       ├── users_token.py              # get secret keys db and token releated components
     │       └── .....
     ├── configs                             # args config files
     │   ├── config.py
@@ -115,7 +120,7 @@ set 'is_pretrained' to be True in order to use pretrained model as embeddings
 ```parser.add_argument('--is_pretrained', type=bool, default=True)```
 
 ### API calls
-Start API
+1. Start API:
 ```
 $ python api_run.py
 ```
@@ -130,6 +135,34 @@ or run api on production
 ```
 $ gunicorn api_run:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:5000 --log-level debug
 ```
+2. Authentication:
+
+```
+generate a secret key and save it:
+$ openssl rand -hex 32
+
+generate hashed password:
+$ from passlib.context import CryptContext
+$ hashed_password = CryptContext(schemes=["bcrypt"], deprecated="auto").hash('admin')
+
+create an admin user:
+$ insert into users_v(id, first_name,last_name,email,hashed_password) values(1, 'admin', 'v', 'admin@qq.com', '$hashed_password')
+
+add secret key, algothrim .. into db:
+$ insert into token_users_v(SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, uid) values('ec039bcb8eada04c0de3cea9ced7440b949f6e2dadafd61ae1f8b687c214b4a9', 'HS256', 30, 1);
+
+authorize yourself with below username/passwd on Swagger docs: http://localhost:5000/docs:
+$ username: admin
+$ password: admin
+
+generate JWT tokens used in "-H 'Authorization: Bearer JWT tokens'":
+$ curl -X 'POST' \
+  'http://localhost:5000/token' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=&username=admin&password=admin&scope=&client_id=&client_secret='
+```
+
 
 ### Swagger docs
 ```

@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends
 from textMG.datasets.generator import Generator
 from textMG.APIs.base_models.responses import Response
 from textMG.APIs.routers.users_token import get_current_user
+from typing import Dict, Any
 
 # load data from disk and generator.
 generator = Generator()
@@ -21,8 +22,9 @@ router = APIRouter(
     dependencies=[Depends(get_current_user)]
 )
 
+
 @router.get("/batch_load/{batch_size}")
-def batch_loader(batch_size: int):
+def batch_loader(batch_size: int) -> Dict[str, Any]:
     """load data in defined patches"""
     data = {}
     iter = generator.get_next_patch(batch=batch_size)

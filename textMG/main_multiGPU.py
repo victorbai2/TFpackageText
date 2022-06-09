@@ -345,7 +345,7 @@ if __name__ == '__main__':
         #                            help="the input_shape requires two arguments, e.g. 'input_shape 1 784' ")
         args = parser_parent.parse_args(remaining_argv)
         query = input("Please enter a sentence: ")
-        # query = "我想去旅行"
+        # query = "美国航空航天局喷气推进实验室卡西尼项目"
         queries.append(query)
         pre = Predict()
         pre.do_pred(queries)

@@ -6,10 +6,11 @@ from textMG.configs.config import args, label_dict
 from textMG.datasets.dataset import Dataset, FullTokenizerV2
 from textMG.datasets.data_loader import load_data
 from textMG.utils.loggers import logger
+from typing import Callable, Iterator, Optional
 
 
 class Generator:
-	def __init__(self, dataset=Dataset, is_pretrained=False):
+	def __init__(self, dataset=Dataset, is_pretrained: bool=False) -> None:
 		self.dataset = dataset()
 		self.is_pretrained = is_pretrained
 		if not self.is_pretrained:
@@ -27,7 +28,7 @@ class Generator:
 			self.input_type_ids = 'input_type_ids'
 			self.y_output = 'y_output'
 
-	def get_next_patch(self, batch=None):
+	def get_next_patch(self, batch: Optional[int]=None) -> Iterator:
 		if batch:
 			try:
 				while True:
@@ -81,7 +82,7 @@ class Generator:
 				logger.critical("EOFError occurred", exc_info=1)
 				raise e
 
-	def iterator(self, path_data_dir):
+	def iterator(self, path_data_dir: str) -> Iterator:
 		files = [f for f in os.listdir(path_data_dir) if f.endswith(".txt")]
 		for filename in files:
 			with open(os.path.join(path_data_dir, filename), 'r') as f:
@@ -102,7 +103,7 @@ class Generator:
 						logger.critical("the excepted line is:{}".format(line))
 						continue
 
-	def iterator_pretrained(self, path_data_dir, vocab_file, max_len, is_token_b=False):
+	def iterator_pretrained(self, path_data_dir: str, vocab_file: str, max_len: int, is_token_b: bool=False) -> Iterator:
 		files = [f for f in os.listdir(path_data_dir) if f.endswith(".txt")]
 		F_tokenizer = FullTokenizerV2(vocab_file=vocab_file, do_lower_case=args.do_lower_case)
 		for filename in files:
@@ -149,11 +150,13 @@ class Generator:
 			self.pickle_dump(path_eval_data)
 		return mnist
 
-	def pickle_dump(self, full_path):
+	def pickle_dump(self, full_path: str) -> None:
 		x, y = self.data_init()
 		with open(full_path, 'wb') as f:
 			for line in zip(x, y):
 				pickle.dump(line, f)
+
+
 if __name__ == '__main__':
 	t1=time()
 	generator = Generator()

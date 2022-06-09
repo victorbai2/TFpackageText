@@ -10,6 +10,7 @@
 import tensorflow as tf
 from textMG.models.bertBaseModule import BertModel
 from textMG.models.lstm_crf_layer import BLSTM_CRF
+from typing import Dict, Tuple
 
 
 class Bert_module:
@@ -18,7 +19,8 @@ class Bert_module:
         self.bert = BertModel
         self.kwargs = kwargs
 
-    def __call__(self, num_labels, max_len, hidden_size, reuse=tf.AUTO_REUSE, is_training=True, dropout=0.3, *args, **kwargs):
+    def __call__(self, num_labels: str, max_len: int, hidden_size: int, reuse=tf.AUTO_REUSE, is_training: bool=True,
+                 dropout: float=0.3, *args, **kwargs) -> Dict[str, tf.Tensor]:
         with tf.variable_scope('bert_classification', reuse=reuse):
             output_weights = tf.get_variable(
                 "output_weights", [num_labels, hidden_size],
@@ -50,13 +52,15 @@ class Bert_module:
 
             return result
 
+
 class Bert_lstm_crf:
 
     def __init__(self, *args, **kwargs):
         self.bert = BertModel
         self.kwargs = kwargs
 
-    def __call__(self, num_labels, max_len, hidden_size, reuse=tf.AUTO_REUSE, is_training=True, *args, **kwargs):
+    def __call__(self, num_labels: str, max_len: int, hidden_size: int, reuse=tf.AUTO_REUSE, is_training=True,
+                 *args, **kwargs) -> Tuple[tf.Tensor]:
         with tf.variable_scope('bert_classification', reuse=reuse):
             input_ids = tf.reshape(kwargs['input_ids'], [-1, max_len], name="vic_input_ids")
             input_mask = tf.reshape(kwargs['input_mask'], [-1, max_len], name="vic_input_mask")

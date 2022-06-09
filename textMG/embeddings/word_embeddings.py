@@ -4,14 +4,15 @@ import os
 from textMG.datasets.dataset import Dataset
 from textMG.configs.config import args
 from textMG.utils.loggers import logger
+from typing import Any, List, Dict
 
 class Get_embeddings:
-    def __init__(self, path_word_embeddings=args.path_word_embeddings):
+    def __init__(self, path_word_embeddings: str=args.path_word_embeddings) -> None:
         self.dataset = Dataset()
         self.path_word_embeddings = path_word_embeddings
         self.w2v_model = self.load_model_word2v(self.path_word_embeddings)
 
-    def load_model_word2v(self, path_word_embeddings, path_data_dir=args.path_data_dir):
+    def load_model_word2v(self, path_word_embeddings: str, path_data_dir: str=args.path_data_dir) -> Any:
         if not os.path.exists(path_word_embeddings):
             try:
                 os.mkdir(path_word_embeddings)
@@ -28,16 +29,16 @@ class Get_embeddings:
         w2v_model = Word2Vec.load(os.path.join(path_word_embeddings, "word2vec.model"))
         return w2v_model
 
-    def train_word2vec(self, sentences, path_save):
+    def train_word2vec(self, sentences: List[str], path_save: str) -> None:
         # save and get model
         model = Word2Vec(sentences, vector_size=args.dim_size, window=4, min_count=1, workers=4)
         model.save(path_save)
 
-    def word_idx(self, words):
+    def word_idx(self, words: str) -> Dict:
         embedding_vector = self.w2v_model.wv[words]
         return embedding_vector
 
-    def get_embeddings(self, path_data_dir=args.path_data_dir, vocab_file=args.vocab_file):
+    def get_embeddings(self, path_data_dir: str=args.path_data_dir, vocab_file: str=args.vocab_file) -> Dict[str, List]:
         vocab = self.dataset.load_vocab(args.path_data_dir, args.vocab_file)
         # use 0 to represent the non-existing words
         embedding_matrix = np.zeros((len(vocab) + 1, 50))

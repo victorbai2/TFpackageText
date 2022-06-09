@@ -8,13 +8,14 @@ from textMG.configs.config import args, label_dict
 from textMG.models.tokenization import FullTokenizer
 import csv
 from textMG.utils.loggers import logger
+from typing import Callable, Dict, List, Union, Tuple
 
 
 class FullTokenizerV2(FullTokenizer):
-    def convert_tokens_to_ids(self, tokens):
+    def convert_tokens_to_ids(self, tokens: str) -> List[str]:
         return self.convert_by_vocab(self.vocab, tokens)
 
-    def convert_by_vocab(self, vocab, items):
+    def convert_by_vocab(self, vocab: Dict[str, int], items: str) -> List[str]:
         """Converts a sequence of [tokens|ids] using the vocab."""
         output = []
         for item in items:
@@ -32,7 +33,7 @@ class Dataset:
         self.value = None
         self.vocab = self.load_vocab(args.path_data_dir, args.vocab_file)
 
-    def load_raw_dataset(self, path_rawdata):
+    def load_raw_dataset(self, path_rawdata: str) -> List[str]:
         files = [f for f in os.listdir(path_rawdata) if f.endswith(".csv")]
         data_raw = []
         for filename in files:
@@ -47,7 +48,7 @@ class Dataset:
             data_raw.extend(data)
         return data_raw
 
-    def clean_save(self, path_rawdata, path_save):
+    def clean_save(self, path_rawdata: str, path_save: str) -> None:
         """clean and save raw data for training"""
         t1 = time()
         if len(os.listdir(path_save)):
@@ -81,7 +82,7 @@ class Dataset:
         logger.info("saved cleaned data to", path_save)
         logger.info("timed used: {}s".format(time() - t1))
 
-    def read_single_file(self, file_path):
+    def read_single_file(self, file_path: str) -> Tuple[List[str]]:
         """read single file with single category"""
         content = []
         label = []
@@ -100,7 +101,7 @@ class Dataset:
                     continue
         return content, label
 
-    def read_files(self, dirname, suffix=".txt"):
+    def read_files(self, dirname: str, suffix=".txt") -> Tuple[List[str]]:
         """read files"""
         contents = []
         labels = []
@@ -111,7 +112,7 @@ class Dataset:
             labels.extend(label)
         return contents, labels
 
-    def build_vocab(self, data_dir, vocab_file, vocab_size=None):
+    def build_vocab(self, data_dir: str, vocab_file: str, vocab_size: int=None) -> None:
         """build the vocabularies and save it to disk"""
         contents, _ = self.read_files(data_dir)
         all_data = [i for j in contents for i in j]
@@ -128,7 +129,7 @@ class Dataset:
         with open(os.path.join(vocab_file, "vocab.txt"), mode='w') as f:
             f.write('\n'.join(words))
 
-    def load_vocab(self, data_dir, vocab_file):
+    def load_vocab(self, data_dir: str, vocab_file: str) -> Dict[str, int]:
         vocab = {}
         if len(os.listdir(vocab_file)) == 0:
             self.build_vocab(data_dir, vocab_file, vocab_size=40000)
@@ -139,7 +140,7 @@ class Dataset:
         logger.info("vocabulary size:{}".format(len(vocab)))
         return vocab
 
-    def load_stopwords(self, path_stopwords):
+    def load_stopwords(self, path_stopwords: str) -> List[str]:
         stopwords = []
         with open(path_stopwords, 'r') as f:
             for i in f:
@@ -147,27 +148,27 @@ class Dataset:
                 stopwords.append(w)
         return stopwords
 
-    def tokenizer(self, lines, vocab):
+    def tokenizer(self, lines: List[str], vocab: Dict[str, int]) -> List[int]:
         tokenized_data = [vocab[w] if w in vocab else 0 for w in lines]
         return tokenized_data
 
-    def bert_tokenizer(self, line, F_tokenizer):
+    def bert_tokenizer(self, line: str, F_tokenizer: Callable) -> List[int]:
         tokenized_data = F_tokenizer.convert_tokens_to_ids(line)
         return tokenized_data
 
-    def pad_sequences(self, x, max_len):
+    def pad_sequences(self, x: List[Union[int, str]], max_len: int) -> List[Union[int, str]]:
         if len(x) < max_len:
             x = x+[0]*(max_len-len(x))
         else:
             x = x[:max_len]
         return x
 
-    def one_hot(self, x):
+    def one_hot(self, x: int) -> List[int]:
         scalar = [0] * len(label_dict)
         scalar[x] = 1
         return scalar
 
-    def process_data(self, data_dir, vocab_file, path_stopwords, n_examples=None):
+    def process_data(self, data_dir: str, vocab_file: str, path_stopwords: str, n_examples=None) -> Tuple[List[int]]:
         """
         # 下列这些都是一个代码匹配一个字符（即代码，字符一一对应才能匹配成功）
         # 代码 功能
@@ -212,7 +213,7 @@ class Dataset:
         logger.info("time used to process the all data: {}s".format(time()-t1))
         return x, y
 
-    def inquiry_process_pred(self, inquiries):
+    def inquiry_process_pred(self, inquiries: List[str]) -> List[int]:
         vocab = self.vocab
         stopwords = self.load_stopwords(args.path_stopwords)
         if len(inquiries)==0:
@@ -224,7 +225,7 @@ class Dataset:
                 tokens.append(token)
             return tokens
 
-    def process_single_inquiry(self, inquiry, vocab, stopwords):
+    def process_single_inquiry(self, inquiry: str, vocab: Dict[str, int], stopwords: List[str]) -> List[int]:
         x_ = jieba.lcut(inquiry.strip())
         x_ = list(filter(lambda x: len(x) >= 1, x_))  # filer out the words with len < 2
         x_ = list(filter(lambda x: x not in stopwords, x_))  # filter the stopwords
@@ -233,7 +234,8 @@ class Dataset:
             x_ = self.pad_sequences(x_, args.max_len)
         return x_
 
-    def process_data_pretrained(self, data_dir, vocab_file, path_stopwords, max_len, is_token_b=False, n_examples=None):
+    def process_data_pretrained(self, data_dir: str, vocab_file: str, path_stopwords: str, max_len: int,
+                                is_token_b: bool=False, n_examples=None) -> Tuple[List]:
         """
         load and tokenize data for pretrained embedding
         """
@@ -280,6 +282,7 @@ class Dataset:
                             continue
         logger.info("time used to process the all data: {}s".format(time()-t1))
         return input_ids, input_masks, input_type_ids, y_output
+
 
 if __name__ == '__main__':
     dataset = Dataset()

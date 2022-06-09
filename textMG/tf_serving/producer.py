@@ -15,6 +15,7 @@ from textMG.datasets.dataset import Dataset
 from textMG.utils.loggers import logger
 dataset = Dataset()
 
+
 class Producer(object):
     def __init__(self):
         self.queue_name='msg_queue'
@@ -59,7 +60,8 @@ class Producer(object):
             self.connection.process_data_events()
         return self.response.decode("utf-8")
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     producer = Producer()
     for i in range(2):
         response = producer.call(["我爱北京天安门", "我爱北京天安门"])

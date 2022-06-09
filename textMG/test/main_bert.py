@@ -7,8 +7,8 @@
 @time: 2022/5/11 21:06
 """
 import tensorflow as tf
-from models.bert_module import Bert_module
-from models.bertBaseModule import BertConfig, get_assignment_map_from_checkpoint
+from textMG.models.bert_module import Bert_module
+from textMG.models.bertBaseModule import BertConfig, get_assignment_map_from_checkpoint
 
 from textMG.datasets.generator import Generator
 from textMG.datasets.dataset import Dataset

@@ -9,6 +9,7 @@ from time import time
 from textMG.configs.config import args
 from textMG.datasets.dataset import Dataset
 import argparse
+from typing import List
 
 parser = argparse.ArgumentParser(add_help=True)
 parser.add_argument('--model_version', type=str, default="001", help="model version to be used for prediction")
@@ -16,13 +17,15 @@ parser.add_argument('--num_tests', type=int, default=500, help="number inputs to
 parser.add_argument('--print_outputs', type=bool, default=False, help="whether or not to print output predictions")
 FLAGS = parser.parse_args()
 
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-def pred_func(input, num_tests, server_curl):
+
+def pred_func(input: List[int], num_tests: int, server_curl: str) -> None:
     t1 = time()
     results = []
     # for i in range(num_tests):
